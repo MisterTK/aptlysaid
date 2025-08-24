@@ -1,0 +1,199 @@
+@import "tailwindcss";
+@reference;
+
+@theme {
+  /* AptlySaid brand colors */
+  --color-primary: #1a2a4f;
+  --color-secondary: #f8f9fa;
+  --color-accent: #c5b358;
+  --color-neutral: #848a96;
+
+  /* Extended palette for UI needs */
+  --color-aptly-navy-50: #e6e9ef;
+  --color-aptly-navy-100: #cdd3df;
+  --color-aptly-navy-200: #9ba7bf;
+  --color-aptly-navy-300: #697b9f;
+  --color-aptly-navy-400: #374f7f;
+  --color-aptly-navy-500: #1a2a4f;
+  --color-aptly-navy-600: #15223f;
+  --color-aptly-navy-700: #101a2f;
+  --color-aptly-navy-800: #0b111f;
+  --color-aptly-navy-900: #060910;
+
+  --color-aptly-gold-50: #fdfcf4;
+  --color-aptly-gold-100: #faf8e9;
+  --color-aptly-gold-200: #f5f1d3;
+  --color-aptly-gold-300: #f0eabd;
+  --color-aptly-gold-400: #ddd191;
+  --color-aptly-gold-500: #c5b358;
+  --color-aptly-gold-600: #b1a146;
+  --color-aptly-gold-700: #9d8f34;
+  --color-aptly-gold-800: #7a6f29;
+  --color-aptly-gold-900: #574f1e;
+
+  --color-aptly-gray-50: #f4f5f6;
+  --color-aptly-gray-100: #e9eaec;
+  --color-aptly-gray-200: #d3d5d9;
+  --color-aptly-gray-300: #bdc0c6;
+  --color-aptly-gray-400: #a1a5ad;
+  --color-aptly-gray-500: #848a96;
+  --color-aptly-gray-600: #6b7280;
+  --color-aptly-gray-700: #525966;
+  --color-aptly-gray-800: #3a404d;
+  --color-aptly-gray-900: #212733;
+
+  /* Font families */
+  --font-serif: "Lora", "Playfair Display", "Georgia", serif;
+  --font-sans: "Inter", "Lato", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Animations */
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+  --animate-pulse-gold: pulseGold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@plugin "daisyui/theme" {
+  name: "aptlysaid";
+  default: true;
+  color-scheme: light;
+
+  /* AptlySaid Brand Colors for DaisyUI */
+  --color-primary: oklch(0.25 0.08 240);
+  --color-primary-content: oklch(0.98 0.01 240);
+  --color-secondary: oklch(0.98 0.01 240);
+  --color-secondary-content: oklch(0.25 0.08 240);
+  --color-accent: oklch(0.72 0.12 88);
+  --color-accent-content: oklch(0.25 0.08 240);
+  --color-neutral: oklch(0.55 0.02 240);
+  --color-neutral-content: oklch(0.98 0.01 240);
+  --color-base-100: oklch(0.98 0.01 240);
+  --color-base-200: oklch(0.94 0.01 240);
+  --color-base-300: oklch(0.9 0.01 240);
+  --color-base-content: oklch(0.25 0.08 240);
+  --color-info: oklch(0.62 0.18 231);
+  --color-info-content: oklch(0.98 0.01 240);
+  --color-success: oklch(0.65 0.15 160);
+  --color-success-content: oklch(0.98 0.01 240);
+  --color-warning: oklch(0.8 0.15 83);
+  --color-warning-content: oklch(0.25 0.08 240);
+  --color-error: oklch(0.68 0.22 22);
+  --color-error-content: oklch(0.98 0.01 240);
+}
+
+@plugin "daisyui" {
+  themes: aptlysaid --default;
+  logs: true;
+}
+
+/* Force light theme and prevent dark mode */
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: light;
+  }
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGold {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Typography Styles */
+h1,
+h2 {
+  font-family: "Lora", "Playfair Display", Georgia, serif;
+}
+
+body,
+p,
+button,
+input,
+select,
+textarea {
+  font-family:
+    "Inter",
+    "Lato",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+a {
+  @apply cursor-pointer;
+}
+
+/* Hack to temporarily solve https://github.com/supabase/auth-ui/issues/219 */
+.authBtn {
+  @apply btn;
+}
+button[disabled].authBtn {
+  font-size: 0.001px;
+  filter: brightness(65%);
+}
+button[disabled].authBtn::before {
+  font-size: 14px;
+  content: "Loading...";
+  color: oklch(var(--pc));
+}
+
+/* AptlySaid Custom Component Styles */
+@utility aptlysaid-card {
+  @apply card bg-base-100 shadow-md border border-base-300;
+}
+
+@utility aptlysaid-btn-primary {
+  @apply btn btn-primary text-primary-content;
+}
+
+@utility aptlysaid-btn-accent {
+  @apply btn btn-accent text-accent-content;
+}
+
+@utility aptlysaid-text-primary {
+  @apply text-primary;
+}
+
+@utility aptlysaid-text-accent {
+  @apply text-accent;
+}
+
+@utility aptlysaid-bg-gradient {
+  @apply bg-gradient-to-br from-primary to-accent;
+}
+
+@utility aptlysaid-navbar {
+  @apply navbar bg-base-100 shadow-sm border-b border-base-300;
+}
+
+@utility aptlysaid-footer {
+  @apply footer md:footer-horizontal p-10 bg-base-200 text-base-content border-t border-base-300;
+}

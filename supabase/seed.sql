@@ -1,0 +1,3 @@
+-- Seed file for initial data
+-- Add any initial data or test data here
+-- This file will run during `supabase db reset`

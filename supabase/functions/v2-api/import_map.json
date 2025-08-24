@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "@google/generative-ai": "https://esm.sh/@google/generative-ai@0.21.0",
+    "google-auth-library": "https://esm.sh/google-auth-library@9.14.1",
+    "@shared/": "./supabase/functions/_shared/"
+  }
+}

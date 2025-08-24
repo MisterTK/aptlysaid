@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Chat bubble with checkmark - favicon version -->
+  <rect width="32" height="32" fill="#F8F9FA" rx="4"/>
+  <!-- Chat bubble -->
+  <path d="M 6 8 Q 6 5 9 5 L 23 5 Q 26 5 26 8 L 26 18 Q 26 21 23 21 L 12 21 L 8 26 Q 7 27 6 26 L 6 21 Q 6 21 6 18 Z" 
+        fill="#1A2A4F" stroke="none"/>
+  <!-- Checkmark -->
+  <path d="M 10 16 L 13 19 L 19 13" 
+        stroke="#C5B358" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

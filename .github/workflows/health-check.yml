@@ -1,0 +1,29 @@
+name: Health Check
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
+  workflow_dispatch:  # Allow manual trigger
+    
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Production Health
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://your-app.vercel.app/api/health)
+          if [ $response -ne 200 ]; then
+            echo "Health check failed with status: $response"
+            exit 1
+          fi
+          echo "Health check passed with status: $response"
+      
+      - name: Check Database Health
+        run: |
+          # Add your database health check here
+          echo "Database health check placeholder"
+      
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "Health check failed - send notification here"
+          # Add notification logic (Slack, email, etc.)

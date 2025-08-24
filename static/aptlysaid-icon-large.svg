@@ -1,0 +1,10 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- High-res icon for conversion to PNG -->
+  <rect width="128" height="128" fill="#F8F9FA" rx="16"/>
+  <!-- Chat bubble -->
+  <path d="M 24 32 Q 24 20 36 20 L 92 20 Q 104 20 104 32 L 104 72 Q 104 84 92 84 L 48 84 L 32 104 Q 28 108 24 104 L 24 84 Q 24 84 24 72 Z" 
+        fill="#1A2A4F" stroke="none"/>
+  <!-- Checkmark -->
+  <path d="M 40 64 L 52 76 L 76 52" 
+        stroke="#C5B358" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
