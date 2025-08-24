@@ -25,7 +25,7 @@ A multi-tenant SaaS application for managing Google My Business reviews with AI-
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/aptlysaid.git
+   git clone https://github.com/MisterTK/aptlysaid.git
    cd aptlysaid
    npm install
    ```
@@ -59,7 +59,7 @@ feature/* → Feature Branches (auto-created)
 ```
 
 ### Benefits:
-- ✅ Single Supabase project (50% cost reduction)
+- ✅ Single Supabase project
 - ✅ Automatic preview environments
 - ✅ Isolated databases per branch
 - ✅ Zero configuration

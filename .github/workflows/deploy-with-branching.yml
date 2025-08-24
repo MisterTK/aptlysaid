@@ -9,6 +9,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Necessary to access repository secrets
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
