@@ -44,7 +44,7 @@ jobs:
           echo "🚀 Deploying to Production..."
           
           # Run migrations (project already linked)
-          supabase db push -y
+          echo "y" | supabase db push
           
           # Deploy edge functions
           for function in v2-api v2-workflow-orchestrator v2-external-integrator; do
@@ -68,7 +68,7 @@ jobs:
           
           # Supabase branching will handle database isolation
           # Just push migrations to the branch (project already linked)
-          supabase db push -y
+          echo "y" | supabase db push
           
           # Note: Edge functions are shared across branches
           # They use the production functions but connect to branch database
