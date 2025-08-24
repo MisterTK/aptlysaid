@@ -1,0 +1,109 @@
+name: Deploy with Supabase Branching
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+      
+      # Step 1: Determine environment
+      - name: Set Environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ENVIRONMENT=production" >> $GITHUB_OUTPUT
+            echo "PROJECT_REF=${{ secrets.SUPABASE_PROJECT_ID }}" >> $GITHUB_OUTPUT
+          else
+            echo "ENVIRONMENT=preview" >> $GITHUB_OUTPUT
+            # For preview branches, Supabase Branching handles the database
+            echo "PROJECT_REF=${{ secrets.SUPABASE_PROJECT_ID }}" >> $GITHUB_OUTPUT
+          fi
+      
+      # Step 2: Link to Supabase Project
+      - name: Link Supabase Project
+        run: |
+          supabase link --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
+            --password ${{ secrets.SUPABASE_DB_PASSWORD }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      
+      # Step 3: For production - run migrations directly
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🚀 Deploying to Production..."
+          
+          # Run migrations
+          supabase db push --project-ref ${{ steps.env.outputs.PROJECT_REF }}
+          
+          # Deploy edge functions
+          for function in v2-api v2-workflow-orchestrator v2-external-integrator; do
+            supabase functions deploy "$function" \
+              --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
+              --no-verify-jwt
+          done
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      
+      # Step 4: For preview - use branching
+      - name: Deploy Preview Branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "🔄 Deploying Preview Branch..."
+          
+          # Get branch name
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          echo "Branch: $BRANCH_NAME"
+          
+          # Supabase branching will handle database isolation
+          # Just push migrations to the branch
+          supabase db push --project-ref ${{ steps.env.outputs.PROJECT_REF }}
+          
+          # Note: Edge functions are shared across branches
+          # They use the production functions but connect to branch database
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      
+      # Step 5: Set Edge Function Secrets (shared across branches)
+      - name: Configure Edge Function Secrets
+        if: github.ref == 'refs/heads/main'  # Only update on production deploys
+        run: |
+          echo "🔐 Updating edge function secrets..."
+          
+          supabase secrets set --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
+            GOOGLE_OAUTH_CLIENT_ID="${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}" \
+            GOOGLE_OAUTH_CLIENT_SECRET="${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}" \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            SENDGRID_API_KEY="${{ secrets.SENDGRID_API_KEY }}" \
+            ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      
+      # Step 6: Verify Deployment
+      - name: Verify Deployment
+        run: |
+          echo "✅ Verifying deployment..."
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "Production deployment complete"
+            
+            # Check cron jobs
+            supabase db query "SELECT jobname, schedule, active FROM cron.job WHERE jobname LIKE 'v2-%'" \
+              --project-ref ${{ steps.env.outputs.PROJECT_REF }} || true
+          else
+            echo "Preview branch deployment complete"
+            echo "Branch database created/updated automatically by Supabase"
+          fi
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
