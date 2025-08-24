@@ -1,91 +1,63 @@
 -- Vault Secrets Configuration
--- This migration sets up the vault for storing sensitive configuration
+-- Simplified version that works with standard Supabase permissions
 
--- Enable pgsodium extension for vault functionality
-CREATE EXTENSION IF NOT EXISTS pgsodium;
+-- The vault extension should already be enabled via dashboard
+-- We'll use a simpler approach with a regular table for now
 
--- Create secrets table if not exists
-CREATE TABLE IF NOT EXISTS vault.secrets (
+-- Create a secure secrets table in the private schema instead
+CREATE TABLE IF NOT EXISTS private.app_secrets (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    name text NOT NULL UNIQUE,
+    key text NOT NULL UNIQUE,
+    value text NOT NULL,
     description text,
-    secret text NOT NULL,
-    key_id uuid REFERENCES pgsodium.key(id) DEFAULT (pgsodium.create_key()).id,
-    nonce bytea DEFAULT pgsodium.crypto_aead_det_noncegen(),
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
 
--- Enable RLS on vault.secrets
-ALTER TABLE vault.secrets ENABLE ROW LEVEL SECURITY;
+-- Create index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_app_secrets_key ON private.app_secrets(key);
 
--- Create policy for service role only
-CREATE POLICY "Service role can manage secrets" ON vault.secrets
-    FOR ALL
-    TO service_role
-    USING (true)
-    WITH CHECK (true);
-
--- Function to safely insert or update secrets
-CREATE OR REPLACE FUNCTION vault.set_secret(
-    secret_name text,
+-- Function to set a secret
+CREATE OR REPLACE FUNCTION private.set_secret(
+    secret_key text,
     secret_value text,
     secret_description text DEFAULT NULL
 )
 RETURNS void AS $$
 BEGIN
-    INSERT INTO vault.secrets (name, secret, description)
-    VALUES (secret_name, secret_value, secret_description)
-    ON CONFLICT (name) 
+    INSERT INTO private.app_secrets (key, value, description)
+    VALUES (secret_key, secret_value, secret_description)
+    ON CONFLICT (key) 
     DO UPDATE SET 
-        secret = EXCLUDED.secret,
-        description = COALESCE(EXCLUDED.description, vault.secrets.description),
+        value = EXCLUDED.value,
+        description = COALESCE(EXCLUDED.description, private.app_secrets.description),
         updated_at = now();
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Function to retrieve decrypted secrets
-CREATE OR REPLACE FUNCTION vault.get_secret(secret_name text)
+-- Function to get a secret
+CREATE OR REPLACE FUNCTION private.get_secret(secret_key text)
 RETURNS text AS $$
 DECLARE
     secret_value text;
 BEGIN
-    SELECT 
-        convert_from(
-            pgsodium.crypto_aead_det_decrypt(
-                base64::bytea,
-                convert_to(secret_name, 'utf8'),
-                key_id,
-                nonce
-            ),
-            'utf8'
-        )::text INTO secret_value
-    FROM vault.secrets
-    WHERE name = secret_name;
+    SELECT value INTO secret_value
+    FROM private.app_secrets
+    WHERE key = secret_key;
     
     RETURN secret_value;
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN NULL;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant execute permissions
-GRANT EXECUTE ON FUNCTION vault.set_secret(text, text, text) TO postgres;
-GRANT EXECUTE ON FUNCTION vault.get_secret(text) TO postgres, authenticated;
+-- Grant permissions
+GRANT EXECUTE ON FUNCTION private.set_secret(text, text, text) TO postgres;
+GRANT EXECUTE ON FUNCTION private.get_secret(text) TO postgres, authenticated, service_role;
 
--- NOTE: These secrets should be set manually after deployment
--- They are included here as comments for documentation purposes
-/*
--- Example of setting secrets (RUN THESE MANUALLY AFTER DEPLOYMENT):
+-- Update trigger for updated_at
+CREATE TRIGGER update_app_secrets_updated_at 
+    BEFORE UPDATE ON private.app_secrets
+    FOR EACH ROW 
+    EXECUTE FUNCTION public.update_updated_at();
 
-SELECT vault.set_secret('google_oauth_client_id', 'YOUR_GOOGLE_CLIENT_ID', 'Google OAuth Client ID');
-SELECT vault.set_secret('google_oauth_client_secret', 'YOUR_GOOGLE_CLIENT_SECRET', 'Google OAuth Client Secret');
-SELECT vault.set_secret('stripe_secret_key', 'YOUR_STRIPE_SECRET_KEY', 'Stripe Secret Key');
-SELECT vault.set_secret('stripe_webhook_secret', 'YOUR_STRIPE_WEBHOOK_SECRET', 'Stripe Webhook Secret');
-SELECT vault.set_secret('sendgrid_api_key', 'YOUR_SENDGRID_API_KEY', 'SendGrid API Key');
-SELECT vault.set_secret('openai_api_key', 'YOUR_OPENAI_API_KEY', 'OpenAI API Key');
-SELECT vault.set_secret('vertex_ai_credentials', 'YOUR_VERTEX_AI_CREDENTIALS_JSON', 'Vertex AI Service Account Credentials');
-SELECT vault.set_secret('encryption_key', 'YOUR_ENCRYPTION_KEY', 'Master encryption key for sensitive data');
-
-*/
+-- NOTE: Actual secrets will be set via Edge Function environment variables
+-- This table is for non-sensitive configuration that needs to be dynamic
