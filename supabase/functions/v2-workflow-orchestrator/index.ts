@@ -1,7 +1,28 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/utils/cors.ts";
-import { retryWithBackoff } from "../_shared/utils/retry.ts";
-import { decryptToken, encryptToken } from "../_shared/auth/token-manager.ts";
+
+// CORS headers
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+};
+
+// Retry utility
+async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      const delay = initialDelay * Math.pow(2, i);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
+// Token encryption stubs (implement with actual encryption)
+const decryptToken = (token) => token;
+const encryptToken = (token) => token;
 // External integrator client
 class ExternalIntegratorClient {
   baseUrl;
