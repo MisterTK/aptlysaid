@@ -17,6 +17,9 @@ CREATE SCHEMA IF NOT EXISTS "public";
 -- TABLES - CORE
 -- ============================================
 
+-- TODO: [MIGRATION] Add data migration scripts for existing production data
+-- Current schema creates empty tables - need to migrate from old project
+
 -- Profiles table (linked to auth.users)
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" uuid NOT NULL,

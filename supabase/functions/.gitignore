@@ -1,0 +1,20 @@
+# TODO: [SETUP] Add proper .env files for local development
+# Currently missing environment variable configuration
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

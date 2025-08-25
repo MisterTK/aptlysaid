@@ -98,6 +98,8 @@ jobs:
         run: |
           echo "🔐 Updating edge function secrets..."
           
+          # TODO: [DEPLOY] Add validation to ensure all required secrets are present
+          # Missing secrets will cause runtime failures in edge functions
           supabase secrets set --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
             GOOGLE_OAUTH_CLIENT_ID="${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}" \
             GOOGLE_OAUTH_CLIENT_SECRET="${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}" \

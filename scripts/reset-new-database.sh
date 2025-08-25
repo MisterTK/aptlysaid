@@ -2,6 +2,8 @@
 
 echo "Resetting the new project database..."
 
+# TODO: [SECURITY] Move database password to environment variable or secrets manager
+# Currently exposed in plain text - critical security risk
 # Export password
 export PGPASSWORD="RIvZLSY0OqmQxvui"
 

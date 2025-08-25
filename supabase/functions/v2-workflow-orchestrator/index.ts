@@ -20,7 +20,9 @@ async function retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) {
   }
 }
 
-// Token encryption stubs (implement with actual encryption)
+// TODO: [SECURITY] Implement proper token encryption using AES-256-GCM
+// These are stub functions that MUST be replaced before production
+// Consider using Supabase Vault or Web Crypto API for encryption
 const decryptToken = (token) => token;
 const encryptToken = (token) => token;
 // External integrator client

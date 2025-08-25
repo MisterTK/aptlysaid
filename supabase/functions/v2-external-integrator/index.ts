@@ -11,24 +11,29 @@ const corsHeaders = {
 const decryptToken = (token) => token;
 const encryptToken = (token) => token;
 
-// GMB Client stub (implement with actual Google My Business API)
+// TODO: [INTEGRATION] Implement actual Google My Business API v4.9 integration
+// Current implementation returns empty data - blocking review sync functionality
+// Required endpoints:
+// - accounts/{accountId}/locations GET
+// - accounts/{accountId}/locations/{locationId}/reviews GET  
+// - accounts/{accountId}/locations/{locationId}/reviews/{reviewId}/reply PUT
 class GMBClient {
   constructor(accessToken) {
     this.accessToken = accessToken;
   }
   
   async getLocations() {
-    // Implement GMB API call
+    // TODO: Implement GMB API call using fetch to mybusinessaccountmanagement.googleapis.com
     return [];
   }
   
   async getReviews(locationId) {
-    // Implement GMB API call
+    // TODO: Implement pagination support for large review sets (pageToken parameter)
     return [];
   }
   
   async postReply(locationId, reviewId, replyText) {
-    // Implement GMB API call
+    // TODO: Add retry logic for 429 rate limit errors
     return {};
   }
 }
