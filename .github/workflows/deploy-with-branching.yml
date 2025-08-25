@@ -44,11 +44,12 @@ jobs:
           echo "🚀 Deploying to Production..."
           
           # ONE-TIME FIX: Drop old tables and recreate
-          # Remove this after first successful run
-          supabase db query "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;" --linked || true
-          supabase db query "DROP SCHEMA IF EXISTS private CASCADE; CREATE SCHEMA private;" --linked || true
-          supabase db query "GRANT ALL ON SCHEMA public TO postgres, anon, authenticated, service_role;" --linked || true
-          supabase db query "GRANT ALL ON SCHEMA private TO postgres;" --linked || true
+          # Remove this after first successful run  
+          psql postgresql://postgres.efujvtdywpkajwbkmaoi:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-1-us-east-2.pooler.supabase.com:6543/postgres \
+            -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;" \
+            -c "DROP SCHEMA IF EXISTS private CASCADE; CREATE SCHEMA private;" \
+            -c "GRANT ALL ON SCHEMA public TO postgres, anon, authenticated, service_role;" \
+            -c "GRANT ALL ON SCHEMA private TO postgres;" || true
           
           # Run migrations (project already linked)
           echo "y" | supabase db push
