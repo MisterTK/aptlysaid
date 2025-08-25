@@ -66,6 +66,9 @@ jobs:
           BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Branch: $BRANCH_NAME"
           
+          # Reset migrations if needed
+          echo "y" | supabase db reset || true
+          
           # Supabase branching will handle database isolation
           # Just push migrations to the branch (project already linked)
           echo "y" | supabase db push
