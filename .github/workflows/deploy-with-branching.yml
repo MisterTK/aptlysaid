@@ -43,6 +43,13 @@ jobs:
         run: |
           echo "🚀 Deploying to Production..."
           
+          # Clean up old migration references
+          supabase migration repair --status reverted 20250824213835 || true
+          supabase migration repair --status reverted 20250824220000 || true
+          supabase migration repair --status reverted 20250824220100 || true
+          supabase migration repair --status reverted 20250824230000 || true
+          supabase migration repair --status reverted 20250824231000 || true
+          
           # Run migrations (project already linked)
           echo "y" | supabase db push
           
@@ -66,11 +73,14 @@ jobs:
           BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Branch: $BRANCH_NAME"
           
-          # Reset migrations if needed
-          echo "y" | supabase db reset || true
+          # Clean up old migration references
+          supabase migration repair --status reverted 20250824213835 || true
+          supabase migration repair --status reverted 20250824220000 || true
+          supabase migration repair --status reverted 20250824220100 || true
+          supabase migration repair --status reverted 20250824230000 || true
+          supabase migration repair --status reverted 20250824231000 || true
           
-          # Supabase branching will handle database isolation
-          # Just push migrations to the branch (project already linked)
+          # Push migrations to the branch (project already linked)
           echo "y" | supabase db push
           
           # Note: Edge functions are shared across branches
