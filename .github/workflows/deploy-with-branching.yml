@@ -43,9 +43,12 @@ jobs:
         run: |
           echo "🚀 Deploying to Production..."
           
-          # ONE-TIME FIX: Reset production to match clean schema
+          # ONE-TIME FIX: Drop old tables and recreate
           # Remove this after first successful run
-          supabase db reset --linked || true
+          supabase db query "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;" --linked || true
+          supabase db query "DROP SCHEMA IF EXISTS private CASCADE; CREATE SCHEMA private;" --linked || true
+          supabase db query "GRANT ALL ON SCHEMA public TO postgres, anon, authenticated, service_role;" --linked || true
+          supabase db query "GRANT ALL ON SCHEMA private TO postgres;" --linked || true
           
           # Run migrations (project already linked)
           echo "y" | supabase db push
