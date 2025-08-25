@@ -46,8 +46,19 @@ jobs:
           # Run migrations (project already linked)
           echo "y" | supabase db push
           
-          # Edge functions will be deployed when they're created
-          echo "Edge functions deployment skipped - not yet created"
+          # Deploy edge functions
+          echo "Deploying edge functions..."
+          supabase functions deploy v2-api \
+            --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
+            --no-verify-jwt || echo "v2-api deployment failed"
+            
+          supabase functions deploy v2-workflow-orchestrator \
+            --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
+            --no-verify-jwt || echo "v2-workflow-orchestrator deployment failed"
+            
+          supabase functions deploy v2-external-integrator \
+            --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
+            --no-verify-jwt || echo "v2-external-integrator deployment failed"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
