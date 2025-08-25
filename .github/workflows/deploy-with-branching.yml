@@ -43,23 +43,11 @@ jobs:
         run: |
           echo "🚀 Deploying to Production..."
           
-          # ONE-TIME FIX: Drop old tables and recreate
-          # Remove this after first successful run  
-          psql postgresql://postgres.efujvtdywpkajwbkmaoi:${{ secrets.SUPABASE_DB_PASSWORD }}@aws-1-us-east-2.pooler.supabase.com:6543/postgres \
-            -c "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;" \
-            -c "DROP SCHEMA IF EXISTS private CASCADE; CREATE SCHEMA private;" \
-            -c "GRANT ALL ON SCHEMA public TO postgres, anon, authenticated, service_role;" \
-            -c "GRANT ALL ON SCHEMA private TO postgres;" || true
-          
           # Run migrations (project already linked)
           echo "y" | supabase db push
           
-          # Deploy edge functions
-          for function in v2-api v2-workflow-orchestrator v2-external-integrator; do
-            supabase functions deploy "$function" \
-              --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
-              --no-verify-jwt
-          done
+          # Edge functions will be deployed when they're created
+          echo "Edge functions deployment skipped - not yet created"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
