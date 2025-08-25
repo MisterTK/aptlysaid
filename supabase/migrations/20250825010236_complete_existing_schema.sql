@@ -12,7 +12,8 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 
-CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
+-- pg_cron extension (likely already exists)
+-- CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
 
 
 
@@ -23,7 +24,8 @@ COMMENT ON SCHEMA "public" IS 'Production-ready cron job system with: Distribute
 
 
 
-CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "public";
+-- pg_net extension (pre-installed)
+-- CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "public";
 
 
 
@@ -43,14 +45,16 @@ CREATE EXTENSION IF NOT EXISTS "btree_gin" WITH SCHEMA "public";
 
 
 
-CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
+-- pg_graphql extension (pre-installed)
+-- CREATE EXTENSION IF NOT EXISTS "pg_graphql" WITH SCHEMA "graphql";
 
 
 
 
 
 
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
+-- pg_stat_statements extension (pre-installed)
+-- CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
 
 
@@ -64,7 +68,8 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "public";
 
 
 
-CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+-- pgcrypto extension (pre-installed)
+-- CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
 
 
@@ -77,14 +82,16 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
 
 
-CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
+-- supabase_vault extension (pre-installed)
+-- CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
 
 
 
 
 
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
+-- uuid-ossp extension (pre-installed)
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
