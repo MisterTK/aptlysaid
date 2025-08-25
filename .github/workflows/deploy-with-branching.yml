@@ -80,8 +80,11 @@ jobs:
           supabase migration repair --status reverted 20250824230000 || true
           supabase migration repair --status reverted 20250824231000 || true
           
-          # Push migrations to the branch (project already linked)
-          echo "y" | supabase db push
+          # Mark the new migration as already applied since tables exist
+          supabase migration repair --status applied 20250825020000_tables_only || true
+          
+          # List current migration status
+          supabase migration list || true
           
           # Note: Edge functions are shared across branches
           # They use the production functions but connect to branch database
