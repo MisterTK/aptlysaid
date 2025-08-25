@@ -43,12 +43,9 @@ jobs:
         run: |
           echo "🚀 Deploying to Production..."
           
-          # Clean up old migration references
-          supabase migration repair --status reverted 20250824213835 || true
-          supabase migration repair --status reverted 20250824220000 || true
-          supabase migration repair --status reverted 20250824220100 || true
-          supabase migration repair --status reverted 20250824230000 || true
-          supabase migration repair --status reverted 20250824231000 || true
+          # ONE-TIME FIX: Reset production to match clean schema
+          # Remove this after first successful run
+          supabase db reset --linked || true
           
           # Run migrations (project already linked)
           echo "y" | supabase db push
