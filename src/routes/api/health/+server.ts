@@ -20,9 +20,7 @@ export const GET: RequestHandler = async ({ locals: { supabase, supabaseServiceR
     const usingServiceRole = !!supabaseServiceRole
     
     const { data: healthData, error: dbError } = await dbClient
-      .from("profiles")
-      .select("id")
-      .limit(1)
+      .rpc('now')
 
     if (dbError) {
       checks.checks.database = `error: ${dbError.message} (using ${usingServiceRole ? 'service' : 'client'} role)`
