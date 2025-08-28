@@ -20,36 +20,20 @@ export default defineConfig({
   test: {
     include: ["src/**/*.{test,spec}.{js,ts}"],
     globals: true,
-    environment: "jsdom",
   },
   build: {
-    minify: "esbuild",
-    sourcemap: false,
-    target: "es2022",
     rollupOptions: {
-      output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('lucide-svelte') || id.includes('daisyui')) {
-              return 'ui';
-            }
-            if (id.includes('fuse.js') || id.includes('html-to-text')) {
-              return 'utils';
-            }
-            return 'vendor';
-          }
-          return undefined;
-        },
+      onwarn(warning, warn) {
+        if (warning.code === "UNUSED_EXTERNAL_IMPORT") return
+        if (warning.code === "CIRCULAR_DEPENDENCY") return
+        warn(warning)
       },
     },
   },
   esbuild: {
-    target: "es2022",
-    legalComments: "none",
-  },
-  server: {
-    fs: {
-      strict: true,
+    tsconfigRaw: {
+      compilerOptions: {
+      },
     },
   },
 })
