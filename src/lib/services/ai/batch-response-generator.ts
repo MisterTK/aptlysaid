@@ -45,7 +45,7 @@ export class BatchResponseGenerator {
 
     // Check if business guidance has response guidelines in any available property
     const guidelinesProperty = 'review_response_guidelines' in businessGuidance 
-      ? (businessGuidance as any).review_response_guidelines 
+      ? (businessGuidance as { review_response_guidelines: string }).review_response_guidelines 
       : null
 
     if (guidelinesProperty) {
@@ -68,7 +68,7 @@ export class BatchResponseGenerator {
     }
 
     const activeUpsellItems = upsellItems
-      .filter((item) => (item as any).is_active)
+      .filter((item) => (item as { is_active: boolean }).is_active)
       .sort((a, b) => (b.priority || 0) - (a.priority || 0))
 
     // Get recent rejection feedback for learning
@@ -89,7 +89,7 @@ export class BatchResponseGenerator {
           .filter((feedback): feedback is string => !!feedback) || []
     }
 
-    let prompt = `You are responding to customer reviews for a business. Your responses should be ${(businessGuidance as any).tone_of_voice || "professional"} and helpful.
+    let prompt = `You are responding to customer reviews for a business. Your responses should be ${(businessGuidance as { tone_of_voice?: string }).tone_of_voice || "professional"} and helpful.
 
 BRAND IDENTITY:
 ${brandIdentity}
@@ -106,7 +106,7 @@ RESPONSE GUIDELINES:`
       })
     }
 
-    prompt += `\n\nTONE OF VOICE: ${(businessGuidance as any).tone_of_voice || "professional"}
+    prompt += `\n\nTONE OF VOICE: ${(businessGuidance as { tone_of_voice?: string }).tone_of_voice || "professional"}
 MAXIMUM RESPONSE LENGTH: 150 words.`
 
     if (rejectionFeedback.length > 0) {
@@ -146,7 +146,7 @@ MAXIMUM RESPONSE LENGTH: 150 words.`
     metaPrompt: string,
     model: string = modelsConfig.defaultModel,
   ): Promise<string> {
-    const reviewerName = (review as any).author_name || "the reviewer"
+    const reviewerName = (review as { author_name?: string }).author_name || "the reviewer"
     const rating = review.rating
     const reviewText = review.review_text || "No review text provided"
 
@@ -156,7 +156,7 @@ Review Details:
 - Reviewer: ${reviewerName}
 - Rating: ${rating}/5 stars
 - Review: ${reviewText}
-- Location: ${(review as any).location_name}
+- Location: ${(review as { location_name?: string }).location_name}
 
 Generate a personalized response to this review.`
 
@@ -248,7 +248,7 @@ Generate a personalized response to this review.`
   ): Promise<BatchGenerationResult[]> {
     // Filter reviews that need responses
     const reviewsNeedingResponse = reviews.filter(
-      (review) => !(review as any).review_reply && review.review_text,
+      (review) => !(review as { review_reply?: string }).review_reply && review.review_text,
     )
 
     if (reviewsNeedingResponse.length === 0) {

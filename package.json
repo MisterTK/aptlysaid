@@ -12,11 +12,19 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test_run": "vitest run",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
-    "format": "prettier --write --plugin prettier-plugin-svelte ./",
-    "format_check": "prettier --check --plugin prettier-plugin-svelte ./"
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer",
+    "build:clean": "rm -rf build .svelte-kit && npm run build",
+    "ci": "npm run lint && npm run typecheck && npm run test:run && npm run build",
+    "prepare": "svelte-kit sync",
+    "postinstall": "svelte-kit sync"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^6.0.1",

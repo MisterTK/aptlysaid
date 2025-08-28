@@ -19,25 +19,37 @@ export default defineConfig({
   ],
   test: {
     include: ["src/**/*.{test,spec}.{js,ts}"],
-    globals: true, /// allows to skip import of test functions like `describe`, `it`, `expect`, etc.
+    globals: true,
+    environment: "jsdom",
   },
   build: {
-    // Disable TypeScript type checking during build
-    // This prevents the build from failing due to type errors
+    minify: "esbuild",
+    sourcemap: false,
+    target: "es2022",
     rollupOptions: {
-      onwarn(warning, warn) {
-        // Ignore TypeScript-related warnings
-        if (warning.code === "UNUSED_EXTERNAL_IMPORT") return
-        if (warning.code === "CIRCULAR_DEPENDENCY") return
-        warn(warning)
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('lucide-svelte') || id.includes('daisyui')) {
+              return 'ui';
+            }
+            if (id.includes('fuse.js') || id.includes('html-to-text')) {
+              return 'utils';
+            }
+            return 'vendor';
+          }
+          return undefined;
+        },
       },
     },
   },
-  // Disable esbuild's TypeScript transform type checking
   esbuild: {
-    tsconfigRaw: {
-      compilerOptions: {
-      },
+    target: "es2022",
+    legalComments: "none",
+  },
+  server: {
+    fs: {
+      strict: true,
     },
   },
 })

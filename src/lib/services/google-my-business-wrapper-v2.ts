@@ -430,7 +430,7 @@ export class GoogleMyBusinessWrapperV3 {
     }
 
     // First check if ANY token exists for debugging
-    const { data: anyToken } = await this.supabase
+    const { data: unknownToken } = await this.supabase
       .from("oauth_tokens")
       .select("id, status, expires_at")
       .eq("tenant_id", organizationId)
@@ -440,8 +440,8 @@ export class GoogleMyBusinessWrapperV3 {
 
     if (anyToken) {
       console.log(`V3 Token status check for ${organizationId}:`, {
-        status: anyToken.status,
-        expires_at: anyToken.expires_at,
+        status: unknownToken.status,
+        expires_at: unknownToken.expires_at,
         isExpired: new Date(anyToken.expires_at) < new Date(),
       })
     }

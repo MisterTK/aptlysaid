@@ -51,7 +51,7 @@ export async function syncUnansweredReviews() {
 
       // Get all accounts and then all locations for each account
       const accounts = await gmb.listAccounts(org.tenant_id!)
-      let locations: any[] = []
+      const locations: unknown[] = []
       for (const account of accounts) {
         const accountLocations = await gmb.listLocations(org.tenant_id!, account.name)
         locations.push(...accountLocations)

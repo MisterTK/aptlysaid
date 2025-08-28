@@ -247,7 +247,7 @@ export class UserManagementService {
       email: invitation.email,
       role: invitation.role as UserRole,
       invited_by: invitation.invited_by,
-      invited_by_name: (invitation.inviter && typeof invitation.inviter === 'object' && 'full_name' in invitation.inviter) ? (invitation.inviter as any).full_name : null,
+      invited_by_name: (invitation.inviter && typeof invitation.inviter === 'object' && 'full_name' in invitation.inviter) ? (invitation.inviter as { full_name: string }).full_name : null,
       created_at: invitation.created_at,
       expires_at: invitation.expires_at,
       status: invitation.status || "pending",
