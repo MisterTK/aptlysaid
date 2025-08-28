@@ -16,12 +16,14 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
 
   try {
 
-    const { data, error: dbError } = await supabase
-      .from("profiles")
-      .select("id")
-      .limit(1)
+    const { data: healthData, error: dbError } = await supabase
+      .rpc('version')
 
-    checks.checks.database = dbError ? `error: ${dbError.message}` : "ok"
+    if (dbError) {
+      checks.checks.database = `error: ${dbError.message || JSON.stringify(dbError)}`
+    } else {
+      checks.checks.database = "ok"
+    }
 
     const { error: authError } = await supabase.auth.getSession()
     checks.checks.auth = authError ? "error" : "ok"
