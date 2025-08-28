@@ -17,15 +17,17 @@ export const GET: RequestHandler = async ({ locals: { supabase, supabaseServiceR
   try {
 
     const dbClient = supabaseServiceRole || supabase
+    const usingServiceRole = !!supabaseServiceRole
+    
     const { data: healthData, error: dbError } = await dbClient
       .from("profiles")
       .select("id")
       .limit(1)
 
     if (dbError) {
-      checks.checks.database = `error: ${dbError.message || JSON.stringify(dbError)}`
+      checks.checks.database = `error: ${dbError.message} (using ${usingServiceRole ? 'service' : 'client'} role)`
     } else {
-      checks.checks.database = "ok"
+      checks.checks.database = `ok (using ${usingServiceRole ? 'service' : 'client'} role)`
     }
 
     const { error: authError } = await supabase.auth.getSession()
