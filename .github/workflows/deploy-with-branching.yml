@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
-      
+
       # Step 1: Determine environment
       - name: Set Environment
         id: env
@@ -28,7 +28,7 @@ jobs:
             # For preview branches, Supabase Branching handles the database
             echo "PROJECT_REF=${{ secrets.SUPABASE_PROJECT_ID }}" >> $GITHUB_OUTPUT
           fi
-      
+
       # Step 2: Link to Supabase Project
       - name: Link Supabase Project
         run: |
@@ -36,16 +36,16 @@ jobs:
             --password ${{ secrets.SUPABASE_DB_PASSWORD }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      
+
       # Step 3: For production - run migrations directly
       - name: Deploy to Production
         if: github.ref == 'refs/heads/main'
         run: |
           echo "🚀 Deploying to Production..."
-          
+
           # Run migrations (project already linked)
           echo "y" | supabase db push
-          
+
           # Deploy edge functions
           echo "Deploying edge functions..."
           supabase functions deploy v2-api \
@@ -62,42 +62,42 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      
+
       # Step 4: For preview - use branching
       - name: Deploy Preview Branch
         if: github.ref != 'refs/heads/main'
         run: |
           echo "🔄 Deploying Preview Branch..."
-          
+
           # Get branch name
           BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Branch: $BRANCH_NAME"
-          
+
           # Clean up old migration references
           supabase migration repair --status reverted 20250824213835 || true
           supabase migration repair --status reverted 20250824220000 || true
           supabase migration repair --status reverted 20250824220100 || true
           supabase migration repair --status reverted 20250824230000 || true
           supabase migration repair --status reverted 20250824231000 || true
-          
+
           # Mark the new migration as already applied since tables exist
           supabase migration repair --status applied 20250825020000_tables_only || true
-          
+
           # List current migration status
           supabase migration list || true
-          
+
           # Note: Edge functions are shared across branches
           # They use the production functions but connect to branch database
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-      
+
       # Step 5: Set Edge Function Secrets (shared across branches)
       - name: Configure Edge Function Secrets
-        if: github.ref == 'refs/heads/main'  # Only update on production deploys
+        if: github.ref == 'refs/heads/main' # Only update on production deploys
         run: |
           echo "🔐 Updating edge function secrets..."
-          
+
           # TODO: [DEPLOY] Add validation to ensure all required secrets are present
           # Missing secrets will cause runtime failures in edge functions
           supabase secrets set --project-ref ${{ steps.env.outputs.PROJECT_REF }} \
@@ -110,12 +110,12 @@ jobs:
             ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      
+
       # Step 6: Verify Deployment
       - name: Verify Deployment
         run: |
           echo "✅ Verifying deployment..."
-          
+
           if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             echo "Production deployment complete"
             

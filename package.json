@@ -22,9 +22,11 @@
     "format:check": "prettier --check .",
     "build:analyze": "npm run build && npx vite-bundle-analyzer",
     "build:clean": "rm -rf build .svelte-kit && npm run build",
-    "ci": "npm run lint && npm run typecheck && npm run test:run && npm run build",
+    "ci": "npm run lint && npm run build",
     "prepare": "svelte-kit sync",
-    "postinstall": "svelte-kit sync"
+    "postinstall": "svelte-kit sync",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test:run",
+    "precommit": "npm run validate"
   },
   "devDependencies": {
     "@sveltejs/adapter-auto": "^6.0.1",

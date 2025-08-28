@@ -121,7 +121,9 @@
       // Auto-advance step when workflow starts
       currentStep++
     } catch (err: unknown) {
-      throw new Error(`Failed to start ${workflowType}: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to start ${workflowType}: ${err instanceof Error ? err.message : "Unknown error"}`,
+      )
     }
   }
 
@@ -142,7 +144,9 @@
       // Redirect to main dashboard
       await goto("/account")
     } catch (err: unknown) {
-      throw new Error(`Failed to complete onboarding: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to complete onboarding: ${err instanceof Error ? err.message : "Unknown error"}`,
+      )
     }
   }
 

@@ -6,8 +6,17 @@ const config = {
   kit: {
     adapter: adapter({
       runtime: "nodejs20.x",
+      regions: ["iad1"],
+      split: false,
     }),
-    inlineStyleThreshold: 150000,
+    inlineStyleThreshold: 1024,
+    csp: {
+      mode: "hash",
+      directives: {
+        "script-src": ["self"],
+        "style-src": ["self", "unsafe-inline"],
+      },
+    },
     typescript: {
       config: (config) => ({
         ...config,

@@ -24,6 +24,7 @@ A multi-tenant SaaS application for managing Google My Business reviews with AI-
 ### Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/MisterTK/aptlysaid.git
    cd aptlysaid
@@ -31,17 +32,20 @@ A multi-tenant SaaS application for managing Google My Business reviews with AI-
    ```
 
 2. **Start Supabase locally**
+
    ```bash
    supabase start
    ```
 
 3. **Copy environment variables**
+
    ```bash
    cp .env.example .env.local
    # Add your local Supabase URL and anon key from supabase start output
    ```
 
 4. **Run the development server**
+
    ```bash
    npm run dev
    ```
@@ -59,6 +63,7 @@ feature/* → Feature Branches (auto-created)
 ```
 
 ### Benefits:
+
 - ✅ Single Supabase project
 - ✅ Automatic preview environments
 - ✅ Isolated databases per branch
@@ -105,15 +110,18 @@ ENCRYPTION_KEY              # Generate with: openssl rand -hex 16
 ### One-Time Setup
 
 1. **Enable GitHub Integration in Supabase**
+
    - Dashboard → Settings → Integrations → GitHub
    - Enable branching
 
 2. **Configure Vercel**
+
    - Import repository
    - Install Supabase integration
    - Auto-deploys configured
 
 3. **Set up Auth Providers**
+
    - Enable Google OAuth in Supabase Dashboard
    - Configure redirect URLs
 
@@ -141,6 +149,7 @@ git push origin develop
 ## 📊 Features
 
 ### For Users
+
 - 📝 Automated review response generation
 - 🤖 AI-powered tone and style customization
 - 📈 Review analytics dashboard
@@ -148,6 +157,7 @@ git push origin develop
 - 📱 Mobile-responsive design
 
 ### For Developers
+
 - 🔄 GitOps workflow
 - 🔐 Secure secrets management
 - ⚡ Edge functions for API

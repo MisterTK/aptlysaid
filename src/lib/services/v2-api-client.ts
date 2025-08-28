@@ -390,7 +390,9 @@ export class V2ApiClient {
     return this.fetchV2Api("/profile")
   }
 
-  async updateProfile(profile: Record<string, unknown>): Promise<{ profile: Record<string, unknown> }> {
+  async updateProfile(
+    profile: Record<string, unknown>,
+  ): Promise<{ profile: Record<string, unknown> }> {
     return this.fetchV2Api("/profile", {
       method: "PUT",
       body: JSON.stringify(profile),

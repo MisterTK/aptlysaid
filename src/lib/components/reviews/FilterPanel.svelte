@@ -37,7 +37,7 @@
   }: Props = $props()
 
   // Removed unused dispatch
-  
+
   let isCollapsed = $state(false)
   // Removed unused showGuidance
   // Removed unused editing guidance state variables

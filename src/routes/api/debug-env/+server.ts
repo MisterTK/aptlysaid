@@ -10,12 +10,10 @@ export async function GET() {
     process_env_secret: !!process.env.GOOGLE_CLIENT_SECRET,
     node_env: process.env.NODE_ENV,
     final_client_id: !!(
-      publicEnv.PUBLIC_GOOGLE_CLIENT_ID ||
-      process.env.PUBLIC_GOOGLE_CLIENT_ID
+      publicEnv.PUBLIC_GOOGLE_CLIENT_ID || process.env.PUBLIC_GOOGLE_CLIENT_ID
     ),
     final_secret: !!(
-      privateEnv.GOOGLE_CLIENT_SECRET ||
-      process.env.GOOGLE_CLIENT_SECRET
+      privateEnv.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET
     ),
   }
 

@@ -53,7 +53,10 @@ export async function syncUnansweredReviews() {
       const accounts = await gmb.listAccounts(org.tenant_id!)
       const locations: unknown[] = []
       for (const account of accounts) {
-        const accountLocations = await gmb.listLocations(org.tenant_id!, account.name)
+        const accountLocations = await gmb.listLocations(
+          org.tenant_id!,
+          account.name,
+        )
         locations.push(...accountLocations)
       }
 
@@ -72,7 +75,8 @@ export async function syncUnansweredReviews() {
           )
 
           for (const review of reviews) {
-            const reviewId = review.reviewId || review.name?.split("/").pop() || ""
+            const reviewId =
+              review.reviewId || review.name?.split("/").pop() || ""
 
             const { data: existingReview } = await supabaseServiceRole
               .from("reviews")
@@ -83,22 +87,24 @@ export async function syncUnansweredReviews() {
               .single()
 
             if (!existingReview) {
-              const { error } = await supabaseServiceRole.from("reviews").insert({
-                tenant_id: org.tenant_id!,
-                platform: "google",
-                platform_review_id: reviewId,
-                location_id: locationId,
-                reviewer_name: review.reviewer?.displayName || "Anonymous",
-                reviewer_avatar_url: review.reviewer?.profilePhotoUrl,
-                rating: starRatingToNumber(review.starRating),
-                review_text: review.comment,
-                review_date: review.createTime,
-                has_owner_reply: !!review.reviewReply,
-                owner_reply_text: review.reviewReply?.comment,
-                owner_reply_date: review.reviewReply?.updateTime,
-                review_updated_at: review.updateTime,
-                is_review_edited: review.updateTime > review.createTime,
-              })
+              const { error } = await supabaseServiceRole
+                .from("reviews")
+                .insert({
+                  tenant_id: org.tenant_id!,
+                  platform: "google",
+                  platform_review_id: reviewId,
+                  location_id: locationId,
+                  reviewer_name: review.reviewer?.displayName || "Anonymous",
+                  reviewer_avatar_url: review.reviewer?.profilePhotoUrl,
+                  rating: starRatingToNumber(review.starRating),
+                  review_text: review.comment,
+                  review_date: review.createTime,
+                  has_owner_reply: !!review.reviewReply,
+                  owner_reply_text: review.reviewReply?.comment,
+                  owner_reply_date: review.reviewReply?.updateTime,
+                  review_updated_at: review.updateTime,
+                  is_review_edited: review.updateTime > review.createTime,
+                })
 
               if (!error) {
                 totalNewReviews++
@@ -109,14 +115,19 @@ export async function syncUnansweredReviews() {
                 console.error(`Error inserting review ${reviewId}:`, error)
               }
             } else {
-              const updateData: Partial<Database["public"]["Tables"]["reviews"]["Row"]> = {}
+              const updateData: Partial<
+                Database["public"]["Tables"]["reviews"]["Row"]
+              > = {}
 
-              if (existingReview.owner_reply_text !== review.reviewReply?.comment) {
+              if (
+                existingReview.owner_reply_text !== review.reviewReply?.comment
+              ) {
                 updateData.owner_reply_text = review.reviewReply?.comment
                 updateData.owner_reply_date = review.reviewReply?.updateTime
                 updateData.has_owner_reply = !!review.reviewReply
                 updateData.review_updated_at = review.updateTime
-                updateData.is_review_edited = review.updateTime > review.createTime
+                updateData.is_review_edited =
+                  review.updateTime > review.createTime
               }
 
               if (Object.keys(updateData).length > 0) {

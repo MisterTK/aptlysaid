@@ -24,7 +24,7 @@ GitHub Repo
 ✅ **Automatic Branch Databases** - Each Git branch gets its own isolated database  
 ✅ **Zero Configuration** - Supabase handles branch creation/deletion automatically  
 ✅ **Data Isolation** - Each branch has its own data, perfect for testing  
-✅ **Shared Edge Functions** - Functions deployed once, work with all branches  
+✅ **Shared Edge Functions** - Functions deployed once, work with all branches
 
 ## One-Time Setup (15 minutes)
 
@@ -56,7 +56,7 @@ Add these secrets to your GitHub repo (Settings → Secrets → Actions):
 
 ```yaml
 # Core Supabase (only ONE project now!)
-SUPABASE_ACCESS_TOKEN: sbp_xxx...  # From account tokens
+SUPABASE_ACCESS_TOKEN: sbp_xxx... # From account tokens
 SUPABASE_PROJECT_ID: efujvtdywpkajwbkmaoi
 SUPABASE_DB_PASSWORD: [your-password]
 SUPABASE_SERVICE_ROLE_KEY: eyJ...
@@ -64,7 +64,7 @@ SUPABASE_SERVICE_ROLE_KEY: eyJ...
 # External Services
 GOOGLE_OAUTH_CLIENT_ID: xxx
 GOOGLE_OAUTH_CLIENT_SECRET: xxx
-STRIPE_SECRET_KEY: sk_live_xxx  # Use test key for preview branches
+STRIPE_SECRET_KEY: sk_live_xxx # Use test key for preview branches
 STRIPE_WEBHOOK_SECRET: whsec_xxx
 OPENAI_API_KEY: sk-xxx
 SENDGRID_API_KEY: SG.xxx
@@ -92,7 +92,7 @@ Update your Supabase client initialization to use environment variables:
 
 ```typescript
 // src/lib/supabase.ts
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js"
 
 // These are automatically set by Vercel for each branch
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -104,16 +104,19 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 ## How It Works
 
 ### When You Push to `main`:
+
 1. GitHub Actions runs migrations on production database
 2. Deploys edge functions to production
 3. Vercel deploys to production domain
 
 ### When You Push to `develop`:
+
 1. Supabase creates/updates a `develop` branch database
 2. GitHub Actions runs migrations on branch database
 3. Vercel deploys preview with branch database URL
 
 ### When You Create a Pull Request:
+
 1. Supabase creates a new branch database for that PR
 2. Migrations run on the PR's database
 3. Vercel creates a preview URL with isolated data
@@ -134,6 +137,7 @@ Production and preview URLs are handled automatically by the integrations!
 ## Migration Strategy with Branching
 
 ### Development Workflow:
+
 ```bash
 # 1. Create feature branch
 git checkout -b feature/new-feature
@@ -153,6 +157,7 @@ git push origin feature/new-feature
 ```
 
 ### Merging to Production:
+
 ```bash
 # 1. Merge PR to main
 # 2. Migrations automatically run on production
@@ -167,12 +172,12 @@ Edge functions are **shared** across all branches but can detect which branch th
 // In your edge function
 Deno.serve(async (req) => {
   // Get the Supabase client for the current branch
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+
   // This automatically connects to the right branch database
   const supabase = createClient(supabaseUrl, supabaseKey)
-  
+
   // Your function logic here
 })
 ```
@@ -182,17 +187,20 @@ Deno.serve(async (req) => {
 Cron jobs only run on the **main production database**. Preview branches don't execute cron jobs, preventing duplicate processing.
 
 If you need to test cron job logic in a branch:
+
 1. Manually trigger the function endpoint
 2. Or temporarily enable for testing (not recommended)
 
 ## Cost Comparison
 
 ### Old Approach (Multiple Projects):
+
 - Production Project: $25/month
 - Preview Project: $25/month
 - **Total: $50/month**
 
 ### New Approach (Branching):
+
 - Production Project: $25/month
 - Preview Branches: FREE (included)
 - **Total: $25/month**
@@ -202,6 +210,7 @@ If you need to test cron job logic in a branch:
 ## Common Scenarios
 
 ### Testing with Production-like Data
+
 ```bash
 # Create a branch from production data
 supabase db dump --project-ref efujvtdywpkajwbkmaoi > prod-snapshot.sql
@@ -211,6 +220,7 @@ supabase db push --project-ref efujvtdywpkajwbkmaoi < prod-snapshot.sql
 ```
 
 ### Debugging Branch Issues
+
 ```bash
 # List all branches
 supabase branches list --project-ref efujvtdywpkajwbkmaoi
@@ -220,6 +230,7 @@ supabase branches get develop --project-ref efujvtdywpkajwbkmaoi
 ```
 
 ### Resetting a Branch Database
+
 ```bash
 # Delete and recreate branch
 supabase branches delete develop --project-ref efujvtdywpkajwbkmaoi
@@ -245,16 +256,19 @@ git push origin develop
 ## Troubleshooting
 
 ### Branch Database Not Created
+
 - Check GitHub Integration is enabled
 - Verify Supabase has repo access
 - Check branch naming (must match Git branch)
 
 ### Migrations Failing on Branch
+
 - Check migration syntax
 - Verify no production-specific data
 - Test locally first
 
 ### Vercel Not Using Branch Database
+
 - Reinstall Supabase Integration
 - Check environment variables
 - Verify branch detection
@@ -262,6 +276,7 @@ git push origin develop
 ## Summary
 
 With Supabase Branching:
+
 - ✅ One project to manage
 - ✅ Automatic preview environments
 - ✅ Lower costs

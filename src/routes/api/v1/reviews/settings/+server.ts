@@ -71,22 +71,28 @@ export const POST: RequestHandler = async ({
     // Map field names from frontend to actual database schema
     const settings = {
       auto_publish_enabled: rawSettings.auto_publish,
-      auto_publish_positive: rawSettings.auto_publish && (rawSettings.min_rating <= 4),
-      auto_publish_neutral: rawSettings.auto_publish && (rawSettings.min_rating <= 3),
-      auto_publish_negative: rawSettings.auto_publish && (rawSettings.min_rating <= 2),
+      auto_publish_positive:
+        rawSettings.auto_publish && rawSettings.min_rating <= 4,
+      auto_publish_neutral:
+        rawSettings.auto_publish && rawSettings.min_rating <= 3,
+      auto_publish_negative:
+        rawSettings.auto_publish && rawSettings.min_rating <= 2,
       min_confidence_score: 0.8, // Default
       min_quality_score: 0.7, // Default
       require_human_review_below_threshold: !rawSettings.auto_approve_5_star,
       rate_limits: {
         max_per_hour: rawSettings.max_per_hour || 10,
         max_per_day: rawSettings.max_per_day || 100,
-        response_delay: rawSettings.response_delay || 30
+        response_delay: rawSettings.response_delay || 30,
       },
       include_upsell: false, // Default for now
     }
 
     // Validate settings
-    if (settings.min_confidence_score < 0 || settings.min_confidence_score > 1) {
+    if (
+      settings.min_confidence_score < 0 ||
+      settings.min_confidence_score > 1
+    ) {
       return json(
         { error: "Confidence score must be between 0 and 1" },
         { status: 400 },

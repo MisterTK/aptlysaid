@@ -56,15 +56,19 @@
 
   const reviewState = $derived.by(() => {
     // Check if this is a manual reply from the business owner
-    if (review.has_owner_reply && review.response_source === 'owner_external') {
+    if (review.has_owner_reply && review.response_source === "owner_external") {
       return "manual_reply"
     }
     // Check if this is an AI-generated reply that's been published
-    if (review.has_owner_reply && review.response_source === 'ai') {
+    if (review.has_owner_reply && review.response_source === "ai") {
       return "ai_published"
     }
     // Check AI response workflow states
-    if (aiResponse?.response_queue?.some(q => ['pending', 'processing'].includes(q.status))) {
+    if (
+      aiResponse?.response_queue?.some((q) =>
+        ["pending", "processing"].includes(q.status),
+      )
+    ) {
       return "queued"
     }
     if (aiResponse?.status === "approved") return "approved"
@@ -136,7 +140,8 @@
   }
 
   function copyResponse() {
-    const textToCopy = aiResponse?.response_text || review.owner_reply_text || ""
+    const textToCopy =
+      aiResponse?.response_text || review.owner_reply_text || ""
     if (textToCopy) {
       navigator.clipboard.writeText(textToCopy)
       copied = true
@@ -164,7 +169,6 @@
       .toUpperCase()
       .slice(0, 2)
   }
-
 </script>
 
 <div
@@ -196,18 +200,17 @@
       <div class="reviewer-info">
         <div class="reviewer-avatar">
           <span class="avatar-text"
-            >{getInitials(review.reviewer_name || 'Anonymous')}</span
+            >{getInitials(review.reviewer_name || "Anonymous")}</span
           >
         </div>
         <div class="reviewer-details">
-          <h4 class="reviewer-name">{review.reviewer_name || 'Anonymous'}</h4>
+          <h4 class="reviewer-name">{review.reviewer_name || "Anonymous"}</h4>
           <div class="review-meta">
             <div class="rating">
-              {#each Array(5).fill(0).map((_, index) => index) as i (i)}
-                <span
-                  class="star"
-                  class:filled={i < review.rating}
-                >
+              {#each Array(5)
+                .fill(0)
+                .map((_, index) => index) as i (i)}
+                <span class="star" class:filled={i < review.rating}>
                   <svg
                     width="14"
                     height="14"
@@ -316,7 +319,9 @@
 
     <!-- Review Content -->
     <div class="review-content">
-      <div class="review-text">{review.review_text || "No comment provided"}</div>
+      <div class="review-text">
+        {review.review_text || "No comment provided"}
+      </div>
 
       {#if review.locations?.name}
         <div class="location-tag">
@@ -339,7 +344,7 @@
     </div>
 
     <!-- Manual Owner Reply Section -->
-    {#if review.has_owner_reply && review.response_source === 'owner_external'}
+    {#if review.has_owner_reply && review.response_source === "owner_external"}
       <div
         class="response-section manual-reply"
         transition:slide={{ duration: 300, easing: cubicOut }}
@@ -362,7 +367,9 @@
               />
             </svg>
             <span>Owner Reply</span>
-            <span class="badge badge-sm badge-success ml-2">Published Externally</span>
+            <span class="badge badge-sm badge-success ml-2"
+              >Published Externally</span
+            >
           </div>
         </div>
         <div class="response-text">
@@ -374,7 +381,7 @@
           </div>
         {/if}
       </div>
-    <!-- AI Response Section -->
+      <!-- AI Response Section -->
     {:else if aiResponse || isGenerating}
       <div
         class="response-section"

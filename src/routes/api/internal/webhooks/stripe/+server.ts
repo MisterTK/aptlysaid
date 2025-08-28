@@ -94,11 +94,17 @@ export const POST: RequestHandler = async ({
         break
 
       case "invoice.payment_failed":
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice, supabase)
+        await handleInvoicePaymentFailed(
+          event.data.object as Stripe.Invoice,
+          supabase,
+        )
         break
 
       case "customer.subscription.trial_will_end":
-        await handleTrialWillEnd(event.data.object as Stripe.Subscription, supabase)
+        await handleTrialWillEnd(
+          event.data.object as Stripe.Subscription,
+          supabase,
+        )
         break
 
       case "checkout.session.completed":
@@ -134,7 +140,10 @@ export const POST: RequestHandler = async ({
 }
 
 // Event handlers
-async function handleSubscriptionCreated(subscription: Stripe.Subscription, supabase: unknown) {
+async function handleSubscriptionCreated(
+  subscription: Stripe.Subscription,
+  supabase: unknown,
+) {
   console.log(`Subscription created: ${subscription.id}`)
 
   try {
@@ -169,7 +178,10 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription, supa
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supabase: unknown) {
+async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription,
+  supabase: unknown,
+) {
   console.log(`Subscription updated: ${subscription.id}`)
 
   try {
@@ -212,7 +224,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supa
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription, supabase: unknown) {
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  supabase: unknown,
+) {
   console.log(`Subscription deleted: ${subscription.id}`)
 
   try {
@@ -275,7 +290,10 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   }
 }
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, supabase: unknown) {
+async function handleInvoicePaymentFailed(
+  invoice: Stripe.Invoice,
+  supabase: unknown,
+) {
   console.log(`Invoice payment failed: ${invoice.id}`)
 
   try {
@@ -309,7 +327,10 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, supabase: unk
   }
 }
 
-async function handleTrialWillEnd(subscription: Stripe.Subscription, supabase: unknown) {
+async function handleTrialWillEnd(
+  subscription: Stripe.Subscription,
+  supabase: unknown,
+) {
   console.log(`Trial will end: ${subscription.id}`)
 
   try {

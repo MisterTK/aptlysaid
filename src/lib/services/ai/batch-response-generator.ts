@@ -44,9 +44,11 @@ export class BatchResponseGenerator {
     let thingsToAvoid: string[] = []
 
     // Check if business guidance has response guidelines in any available property
-    const guidelinesProperty = 'review_response_guidelines' in businessGuidance 
-      ? (businessGuidance as { review_response_guidelines: string }).review_response_guidelines 
-      : null
+    const guidelinesProperty =
+      "review_response_guidelines" in businessGuidance
+        ? (businessGuidance as { review_response_guidelines: string })
+            .review_response_guidelines
+        : null
 
     if (guidelinesProperty) {
       try {
@@ -146,7 +148,8 @@ MAXIMUM RESPONSE LENGTH: 150 words.`
     metaPrompt: string,
     model: string = modelsConfig.defaultModel,
   ): Promise<string> {
-    const reviewerName = (review as { author_name?: string }).author_name || "the reviewer"
+    const reviewerName =
+      (review as { author_name?: string }).author_name || "the reviewer"
     const rating = review.rating
     const reviewText = review.review_text || "No review text provided"
 
@@ -248,7 +251,9 @@ Generate a personalized response to this review.`
   ): Promise<BatchGenerationResult[]> {
     // Filter reviews that need responses
     const reviewsNeedingResponse = reviews.filter(
-      (review) => !(review as { review_reply?: string }).review_reply && review.review_text,
+      (review) =>
+        !(review as { review_reply?: string }).review_reply &&
+        review.review_text,
     )
 
     if (reviewsNeedingResponse.length === 0) {

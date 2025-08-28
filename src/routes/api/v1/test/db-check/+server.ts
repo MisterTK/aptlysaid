@@ -9,7 +9,10 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
     // Check if RPC function exists, otherwise provide fallback
     const { data: sqlCheck, error: sqlError } = await locals.supabaseServiceRole
       .rpc("get_oauth_token_debug", { p_tenant_id: tenantId })
-      .catch(() => ({ data: null, error: { message: "RPC function not available" } }))
+      .catch(() => ({
+        data: null,
+        error: { message: "RPC function not available" },
+      }))
 
     // Check with minimal filters
     const { data: minimalCheck, error: minimalError } =

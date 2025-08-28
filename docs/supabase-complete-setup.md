@@ -3,6 +3,7 @@
 ## Overview
 
 This guide covers the complete setup of Supabase environments including:
+
 - Database migrations and schema
 - pg_cron scheduled jobs
 - Vault secrets for sensitive data
@@ -54,6 +55,7 @@ export SUPABASE_ACCESS_TOKEN=your_token_here
 ```
 
 This script will:
+
 1. Link to your Supabase project
 2. Run all database migrations
 3. Deploy edge functions
@@ -64,11 +66,13 @@ This script will:
 ### 2. Manual Secret Configuration
 
 #### Edge Function Secrets
+
 ```bash
 ./scripts/setup-edge-function-secrets.sh preview  # or production
 ```
 
 Required secrets:
+
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 - `STRIPE_SECRET_KEY`
@@ -79,11 +83,13 @@ Required secrets:
 - `ENCRYPTION_KEY`
 
 #### Vault Secrets (Database)
+
 ```bash
 ./scripts/setup-vault-secrets.sh preview  # or production
 ```
 
 These are stored encrypted in the database and accessed via:
+
 ```sql
 SELECT vault.get_secret('secret_name');
 ```
@@ -92,14 +98,14 @@ SELECT vault.get_secret('secret_name');
 
 The following cron jobs are automatically configured:
 
-| Job Name | Schedule | Purpose |
-|----------|----------|---------|
-| v2-sync-unanswered-reviews | */15 * * * * | Sync reviews every 15 minutes |
-| v2-process-review-queue | */5 * * * * | Process queue every 5 minutes |
-| v2-refresh-oauth-tokens | 0 * * * * | Refresh tokens hourly |
-| v2-cleanup-old-workflows | 0 2 * * * | Clean up at 2 AM daily |
-| v2-generate-daily-stats | 0 3 * * * | Generate stats at 3 AM daily |
-| v2-health-check | */5 * * * * | Health check every 5 minutes |
+| Job Name                   | Schedule        | Purpose                       |
+| -------------------------- | --------------- | ----------------------------- |
+| v2-sync-unanswered-reviews | _/15 _ \* \* \* | Sync reviews every 15 minutes |
+| v2-process-review-queue    | _/5 _ \* \* \*  | Process queue every 5 minutes |
+| v2-refresh-oauth-tokens    | 0 \* \* \* \*   | Refresh tokens hourly         |
+| v2-cleanup-old-workflows   | 0 2 \* \* \*    | Clean up at 2 AM daily        |
+| v2-generate-daily-stats    | 0 3 \* \* \*    | Generate stats at 3 AM daily  |
+| v2-health-check            | _/5 _ \* \* \*  | Health check every 5 minutes  |
 
 ### Managing Cron Jobs
 
@@ -122,11 +128,13 @@ SELECT * FROM public.cron_job_health;
 ### Required in Supabase Dashboard
 
 1. **Email Provider**
+
    - Enable email confirmations
    - Set OTP expiry to 24 hours
    - Configure SMTP settings
 
 2. **Google OAuth**
+
    - Add authorized redirect URLs:
      - `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
      - Your app URLs from `additional_redirect_urls`
@@ -137,6 +145,7 @@ SELECT * FROM public.cron_job_health;
 ## Storage Buckets
 
 Automatically created buckets:
+
 - `avatars` - Public, max 5MB, images only
 - `documents` - Private, max 10MB, PDFs and docs
 
@@ -207,16 +216,19 @@ supabase db reset --project-ref PROJECT_ID
 ## Security Best Practices
 
 1. **Never commit secrets to git**
+
    - Use environment variables
    - Use Supabase secrets management
    - Use vault for database secrets
 
 2. **Rotate secrets regularly**
+
    - OAuth tokens
    - API keys
    - Encryption keys
 
 3. **Use RLS policies**
+
    - All tables should have RLS enabled
    - Service role should be used sparingly
 
@@ -256,7 +268,7 @@ All scripts are in the `/scripts` directory:
 SUPABASE_ACCESS_TOKEN: sbp_xxx...
 SUPABASE_PREVIEW_PROJECT_ID: udkojnvmgqicrvzbaqts
 SUPABASE_PREVIEW_DB_PASSWORD: your_password
-SUPABASE_PROD_PROJECT_ID: efujvtdywpkajwbkmaoi  
+SUPABASE_PROD_PROJECT_ID: efujvtdywpkajwbkmaoi
 SUPABASE_PROD_DB_PASSWORD: your_password
 ```
 

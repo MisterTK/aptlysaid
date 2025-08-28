@@ -1,6 +1,7 @@
 # Deployment Process
 
 ## Quick Reference
+
 - Feature development: Always branch from `develop`
 - Staging deployment: Merge PR to `develop`
 - Production deployment: Merge PR to `main`
@@ -8,17 +9,20 @@
 ## Environments
 
 ### Temporary (Current Production)
+
 - **Supabase Project**: dchddqxaelzokyjsebpx
 - **URL**: https://dchddqxaelzokyjsebpx.supabase.co
 - **Purpose**: Current production environment to be migrated
 
 ### Preview/Staging
+
 - **Supabase Project**: udkojnvmgqicrvzbaqts
 - **URL**: https://udkojnvmgqicrvzbaqts.supabase.co
 - **Branch**: `develop`
 - **Auto-deploys**: On push to `develop`
 
 ### Production
+
 - **Supabase Project**: efujvtdywpkajwbkmaoi
 - **URL**: https://efujvtdywpkajwbkmaoi.supabase.co
 - **Branch**: `main`
@@ -27,6 +31,7 @@
 ## Workflow
 
 ### 1. Feature Development
+
 ```bash
 git checkout develop
 git pull origin develop
@@ -38,11 +43,13 @@ git push origin feature/your-feature-name
 ```
 
 ### 2. Create Pull Request
+
 - Target branch: `develop`
 - Wait for CI checks to pass
 - Request review from team lead
 
 ### 3. Staging Deployment
+
 - Merge PR to `develop`
 - GitHub Actions automatically:
   - Runs tests
@@ -51,6 +58,7 @@ git push origin feature/your-feature-name
   - Vercel deploys frontend
 
 ### 4. Production Deployment
+
 - Create PR from `develop` to `main`
 - Requires approval
 - Merge triggers production deployment
@@ -58,12 +66,14 @@ git push origin feature/your-feature-name
 ## Database Migrations
 
 ### Creating a Migration
+
 ```bash
 supabase migration new your_migration_name
 # Edit the migration file in supabase/migrations/
 ```
 
 ### Testing Locally
+
 ```bash
 supabase db reset  # Resets and applies all migrations
 supabase db start  # Starts local database
@@ -72,17 +82,20 @@ supabase db start  # Starts local database
 ## Edge Functions
 
 ### Local Development
+
 ```bash
 supabase functions serve v2-api
 # Test at http://localhost:54321/functions/v1/v2-api
 ```
 
 ### Deployment
+
 Functions are automatically deployed via GitHub Actions
 
 ## Emergency Procedures
 
 ### Rollback
+
 ```bash
 # Revert commit on main branch
 git checkout main
@@ -91,6 +104,7 @@ git push origin main
 ```
 
 ### Hotfix
+
 ```bash
 git checkout main
 git checkout -b hotfix/issue-description

@@ -447,7 +447,7 @@ export const load: PageServerLoad = async ({
     .in("status", ["active", "refresh_failed", "expired"]) // Include failed tokens
     .single()
 
-  // Connection detection based on oauth_tokens table  
+  // Connection detection based on oauth_tokens table
   const hasGoogleConnection = !tokenCheckError && !!oauthToken
 
   console.log(`[DEBUG] Token check for tenant ${orgId}:`, {
@@ -764,7 +764,9 @@ export const load: PageServerLoad = async ({
                 "Content-Type": "application/x-www-form-urlencoded",
               },
               body: new URLSearchParams({
-                refresh_token: decryptToken(refreshTokenData.encrypted_refresh_token),
+                refresh_token: decryptToken(
+                  refreshTokenData.encrypted_refresh_token,
+                ),
                 client_id:
                   PUBLIC_GOOGLE_CLIENT_ID ||
                   publicEnv.PUBLIC_GOOGLE_CLIENT_ID ||

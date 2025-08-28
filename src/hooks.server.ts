@@ -7,16 +7,23 @@ import type { Handle } from "@sveltejs/kit"
 import { sequence } from "@sveltejs/kit/hooks"
 
 // Use Node.js environment variables with fallbacks to prevent crashes
-const PUBLIC_SUPABASE_URL = process.env.PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-const PUBLIC_SUPABASE_ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-const PRIVATE_SUPABASE_SERVICE_ROLE = process.env.PRIVATE_SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+const PUBLIC_SUPABASE_URL =
+  process.env.PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const PUBLIC_SUPABASE_ANON_KEY =
+  process.env.PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  ""
+const PRIVATE_SUPABASE_SERVICE_ROLE =
+  process.env.PRIVATE_SUPABASE_SERVICE_ROLE ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  ""
 
 // Validate required environment variables
 if (!PUBLIC_SUPABASE_URL || !PUBLIC_SUPABASE_ANON_KEY) {
   console.error("Missing required Supabase environment variables:", {
     url: !!PUBLIC_SUPABASE_URL,
     key: !!PUBLIC_SUPABASE_ANON_KEY,
-    serviceRole: !!PRIVATE_SUPABASE_SERVICE_ROLE
+    serviceRole: !!PRIVATE_SUPABASE_SERVICE_ROLE,
   })
 }
 
@@ -53,8 +60,9 @@ export const supabase: Handle = async ({ event, resolve }) => {
   } else {
     // Create mock clients to prevent crashes in development/misconfigured environments
     console.warn("Supabase not configured - using mock client")
-    event.locals.supabase = null as any
-    event.locals.supabaseServiceRole = null as any
+    event.locals.supabase = null as unknown as App.Locals["supabase"]
+    event.locals.supabaseServiceRole =
+      null as unknown as App.Locals["supabaseServiceRole"]
   }
 
   // https://github.com/supabase/auth-js/issues/888#issuecomment-2189298518

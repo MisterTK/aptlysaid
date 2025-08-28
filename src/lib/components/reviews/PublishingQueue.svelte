@@ -290,7 +290,9 @@
                         >{item.review.reviewer.displayName}</span
                       >
                       <div class="rating">
-                        {#each Array(5).fill(0).map((_, index) => index) as i (i)}
+                        {#each Array(5)
+                          .fill(0)
+                          .map((_, index) => index) as i (i)}
                           <span
                             class="star"
                             class:filled={i < parseInt(item.review.starRating)}

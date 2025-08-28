@@ -15,7 +15,10 @@ export class ResponsePublisherService {
     private googleService: GoogleMyBusinessService,
   ) {}
 
-  async publishSingleResponse(responseId: string, publishedBy?: string): Promise<PublishResult> {
+  async publishSingleResponse(
+    responseId: string,
+    publishedBy?: string,
+  ): Promise<PublishResult> {
     try {
       const { data: aiResponse, error: fetchError } = await this.supabase
         .from("ai_responses")
@@ -55,7 +58,7 @@ export class ResponsePublisherService {
           has_owner_reply: true,
           owner_reply_text: aiResponse.response_text,
           owner_reply_date: new Date().toISOString(),
-          response_source: 'ai',
+          response_source: "ai",
         })
         .eq("id", aiResponse.review.id)
 
@@ -94,17 +97,24 @@ export class ResponsePublisherService {
       status: "pending" as const,
     }))
 
-    const { error: insertError } = await this.supabase.from("response_queue").insert(queueItems)
+    const { error: insertError } = await this.supabase
+      .from("response_queue")
+      .insert(queueItems)
     if (insertError) throw insertError
 
     return approvedResponses.length
   }
 
-  async processNextQueuedResponse(tenantId: string, publishedBy?: string): Promise<PublishResult> {
+  async processNextQueuedResponse(
+    tenantId: string,
+    publishedBy?: string,
+  ): Promise<PublishResult> {
     try {
       const { data: queueItem, error: fetchError } = await this.supabase
         .from("response_queue")
-        .select("*, ai_response:response_id(*, review:review_id(*, location:location_id(*)))")
+        .select(
+          "*, ai_response:response_id(*, review:review_id(*, location:location_id(*)))",
+        )
         .eq("tenant_id", tenantId)
         .eq("status", "pending")
         .order("created_at", { ascending: true })
@@ -112,9 +122,13 @@ export class ResponsePublisherService {
         .single()
 
       if (fetchError) throw fetchError
-      if (!queueItem) return { success: true, processedCount: 0, failedCount: 0 }
+      if (!queueItem)
+        return { success: true, processedCount: 0, failedCount: 0 }
 
-      await this.supabase.from("response_queue").update({ status: "processing" }).eq("id", queueItem.id)
+      await this.supabase
+        .from("response_queue")
+        .update({ status: "processing" })
+        .eq("id", queueItem.id)
 
       try {
         const { ai_response } = queueItem
@@ -123,15 +137,46 @@ export class ResponsePublisherService {
 
         const reviewResourceName = `accounts/-/locations/${location.google_place_id}/reviews/${review.platform_review_id}`
 
-        await this.googleService.replyToReviewByName(reviewResourceName, ai_response.response_text)
+        await this.googleService.replyToReviewByName(
+          reviewResourceName,
+          ai_response.response_text,
+        )
 
-        await this.supabase.from("response_queue").update({ status: "published", published_at: new Date().toISOString() }).eq("id", queueItem.id)
-        await this.supabase.from("ai_responses").update({ status: "published", published_at: new Date().toISOString(), published_by: publishedBy }).eq("id", ai_response.id)
-        await this.supabase.from("reviews").update({ has_owner_reply: true, owner_reply_text: ai_response.response_text, owner_reply_date: new Date().toISOString(), response_source: 'ai' }).eq("id", review.id)
+        await this.supabase
+          .from("response_queue")
+          .update({
+            status: "published",
+            published_at: new Date().toISOString(),
+          })
+          .eq("id", queueItem.id)
+        await this.supabase
+          .from("ai_responses")
+          .update({
+            status: "published",
+            published_at: new Date().toISOString(),
+            published_by: publishedBy,
+          })
+          .eq("id", ai_response.id)
+        await this.supabase
+          .from("reviews")
+          .update({
+            has_owner_reply: true,
+            owner_reply_text: ai_response.response_text,
+            owner_reply_date: new Date().toISOString(),
+            response_source: "ai",
+          })
+          .eq("id", review.id)
 
         return { success: true, processedCount: 1, failedCount: 0 }
       } catch (error) {
-        await this.supabase.from("response_queue").update({ status: "failed", error_message: error instanceof Error ? error.message : "Unknown error" }).eq("id", queueItem.id)
+        await this.supabase
+          .from("response_queue")
+          .update({
+            status: "failed",
+            error_message:
+              error instanceof Error ? error.message : "Unknown error",
+          })
+          .eq("id", queueItem.id)
         throw error
       }
     } catch (error) {

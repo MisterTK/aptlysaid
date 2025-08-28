@@ -42,7 +42,7 @@
   let isPublishing = $state(false)
   let publishingStates = $state<Map<string, boolean>>(new Map())
   let publishError = $state<string | null>(null)
-  
+
   // Publishing queue state
   let queueItems = $state<QueueItem[]>([])
   let queuePaused = $state(false)
@@ -57,8 +57,8 @@
       start: "09:00",
       end: "17:00",
       timezone: "America/New_York",
-      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-    }
+      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    },
   })
 
   // Inline editing state
@@ -167,7 +167,6 @@
     }
   }
 
-
   let filteredReviews = $derived.by(() => {
     if (!data.reviews) return []
 
@@ -180,7 +179,7 @@
         (r) =>
           r.review_text?.toLowerCase().includes(query) ||
           r.reviewer_name?.toLowerCase().includes(query) ||
-          r.locations?.name?.toLowerCase().includes(query)
+          r.locations?.name?.toLowerCase().includes(query),
       )
     }
 
@@ -200,26 +199,43 @@
       reviews = reviews.filter((r) => r.has_owner_reply === true)
     } else if (filterStatus === "unreplied") {
       // New Review: only reviews that do not yet have a draft AI response
-      reviews = reviews.filter((r) => (!r.ai_responses || r.ai_responses.length === 0) && r.review_text)
+      reviews = reviews.filter(
+        (r) =>
+          (!r.ai_responses || r.ai_responses.length === 0) && r.review_text,
+      )
     } else if (filterStatus === "ai-generated") {
       // Show reviews with draft AI responses waiting for approval
-      reviews = reviews.filter((r) => r.ai_responses?.some(resp => resp.status === 'draft'))
+      reviews = reviews.filter((r) =>
+        r.ai_responses?.some((resp) => resp.status === "draft"),
+      )
     } else if (filterStatus === "approved") {
       // Show reviews with approved AI responses that are NOT yet in queue
-      reviews = reviews.filter((r) => r.ai_responses?.some(resp => {
-        const isApproved = resp.status === 'approved'
-        const isInQueue = resp.response_queue && Array.isArray(resp.response_queue) && 
-          resp.response_queue.length > 0 &&
-          resp.response_queue.some(q => q.status && ['pending', 'processing'].includes(q.status))
-        return isApproved && !isInQueue
-      }))
+      reviews = reviews.filter((r) =>
+        r.ai_responses?.some((resp) => {
+          const isApproved = resp.status === "approved"
+          const isInQueue =
+            resp.response_queue &&
+            Array.isArray(resp.response_queue) &&
+            resp.response_queue.length > 0 &&
+            resp.response_queue.some(
+              (q) => q.status && ["pending", "processing"].includes(q.status),
+            )
+          return isApproved && !isInQueue
+        }),
+      )
     } else if (filterStatus === "queued") {
       // Show reviews with AI responses that ARE in publishing queue
-      reviews = reviews.filter((r) => r.ai_responses?.some(resp => 
-        resp.response_queue && Array.isArray(resp.response_queue) && 
-        resp.response_queue.length > 0 &&
-        resp.response_queue.some(q => q.status && ['pending', 'processing'].includes(q.status))
-      ))
+      reviews = reviews.filter((r) =>
+        r.ai_responses?.some(
+          (resp) =>
+            resp.response_queue &&
+            Array.isArray(resp.response_queue) &&
+            resp.response_queue.length > 0 &&
+            resp.response_queue.some(
+              (q) => q.status && ["pending", "processing"].includes(q.status),
+            ),
+        ),
+      )
     }
 
     // Sort
@@ -246,49 +262,70 @@
 
   let stats = $derived.by(() => {
     const total = data.reviews?.length || 0
-    
+
     // Actionable reviews are those with text content that can be responded to
-    const actionableReviews = data.reviews?.filter(r => r.review_text && !r.has_owner_reply).length || 0
-    
+    const actionableReviews =
+      data.reviews?.filter((r) => r.review_text && !r.has_owner_reply).length ||
+      0
+
     // Reviews that already have replies (either manual from external source or AI-published)
-    const published = data.reviews?.filter(r => r.has_owner_reply === true).length || 0
-    
+    const published =
+      data.reviews?.filter((r) => r.has_owner_reply === true).length || 0
+
     // Count manual vs AI replies
-    const manualReplies = data.reviews?.filter(r => 
-      r.has_owner_reply === true && r.response_source === 'owner_external'
-    ).length || 0
-    
-    const aiPublishedReplies = data.reviews?.filter(r => 
-      r.has_owner_reply === true && r.response_source === 'ai'
-    ).length || 0
-    
+    const manualReplies =
+      data.reviews?.filter(
+        (r) =>
+          r.has_owner_reply === true && r.response_source === "owner_external",
+      ).length || 0
+
+    const aiPublishedReplies =
+      data.reviews?.filter(
+        (r) => r.has_owner_reply === true && r.response_source === "ai",
+      ).length || 0
+
     // AI response workflow stats
-    const aiGenerated = data.allAiResponses?.filter(r => r.status === 'draft').length || 0
-    
+    const aiGenerated =
+      data.allAiResponses?.filter((r) => r.status === "draft").length || 0
+
     // Count responses that ARE in queue (pending or processing)
-    const queued = data.allAiResponses?.filter(r => {
-      // Check if response_queue exists and has items with pending/processing status
-      return r.response_queue && Array.isArray(r.response_queue) && 
-        r.response_queue.length > 0 &&
-        r.response_queue.some(q => q.status && ['pending', 'processing'].includes(q.status))
-    }).length || 0
-    
+    const queued =
+      data.allAiResponses?.filter((r) => {
+        // Check if response_queue exists and has items with pending/processing status
+        return (
+          r.response_queue &&
+          Array.isArray(r.response_queue) &&
+          r.response_queue.length > 0 &&
+          r.response_queue.some(
+            (q) => q.status && ["pending", "processing"].includes(q.status),
+          )
+        )
+      }).length || 0
+
     // Count approved responses that are NOT in queue (ready to be queued)
-    const approved = data.allAiResponses?.filter(r => {
-      const isApproved = r.status === 'approved'
-      const isInQueue = r.response_queue && Array.isArray(r.response_queue) && 
-        r.response_queue.length > 0 &&
-        r.response_queue.some(q => q.status && ['pending', 'processing'].includes(q.status))
-      return isApproved && !isInQueue
-    }).length || 0
-    
+    const approved =
+      data.allAiResponses?.filter((r) => {
+        const isApproved = r.status === "approved"
+        const isInQueue =
+          r.response_queue &&
+          Array.isArray(r.response_queue) &&
+          r.response_queue.length > 0 &&
+          r.response_queue.some(
+            (q) => q.status && ["pending", "processing"].includes(q.status),
+          )
+        return isApproved && !isInQueue
+      }).length || 0
+
     // New reviews that need AI response generation
-    const newReviews = data.reviews?.filter(r => 
-      r.review_text && !r.has_owner_reply && !r.ai_responses?.length
-    ).length || 0
+    const newReviews =
+      data.reviews?.filter(
+        (r) => r.review_text && !r.has_owner_reply && !r.ai_responses?.length,
+      ).length || 0
 
     const avgRating =
-      total > 0 ? data.reviews?.reduce((sum, r) => sum + r.rating, 0) / total : 0
+      total > 0
+        ? data.reviews?.reduce((sum, r) => sum + r.rating, 0) / total
+        : 0
 
     return {
       total,
@@ -335,41 +372,51 @@
       })
       if (response.ok) {
         const queueData = await response.json()
-        
+
         // Transform queue items to match PublishingQueue component format
-        queueItems = queueData.items.map((item: Record<string, unknown>, index: number) => ({
-          id: item.id,
-          aiResponseId: item.aiResponseId,
-          review: {
-            id: item.review?.reviewId || '',
-            reviewer: {
-              displayName: item.review?.reviewer?.displayName || 'Anonymous'
+        queueItems = queueData.items.map(
+          (item: Record<string, unknown>, index: number) => ({
+            id: item.id,
+            aiResponseId: item.aiResponseId,
+            review: {
+              id: item.review?.reviewId || "",
+              reviewer: {
+                displayName: item.review?.reviewer?.displayName || "Anonymous",
+              },
+              starRating: item.review?.starRating || "0",
+              locationName: item.review?.locationName || "",
+              review_text: "", // Not provided by API but not used in queue display
+              rating: parseInt(item.review?.starRating || "0"),
+              review_date: new Date().toISOString(), // Not provided by API
             },
-            starRating: item.review?.starRating || '0',
-            locationName: item.review?.locationName || '',
-            review_text: '', // Not provided by API but not used in queue display
-            rating: parseInt(item.review?.starRating || '0'),
-            review_date: new Date().toISOString(), // Not provided by API
-          },
-          position: index + 1,
-          scheduledTime: item.scheduledTime ? new Date(item.scheduledTime) : new Date(),
-          status: item.status
-        }))
-        
+            position: index + 1,
+            scheduledTime: item.scheduledTime
+              ? new Date(item.scheduledTime)
+              : new Date(),
+            status: item.status,
+          }),
+        )
+
         publishingStats = {
-          pending: queueData.items.filter((i: { status: string }) => i.status === 'pending').length,
-          processing: queueData.items.filter((i: { status: string }) => i.status === 'processing').length,
+          pending: queueData.items.filter(
+            (i: { status: string }) => i.status === "pending",
+          ).length,
+          processing: queueData.items.filter(
+            (i: { status: string }) => i.status === "processing",
+          ).length,
           completed: 0,
-          failed: queueData.items.filter((i: { status: string }) => i.status === 'failed').length,
-          total: queueData.items.length
+          failed: queueData.items.filter(
+            (i: { status: string }) => i.status === "failed",
+          ).length,
+          total: queueData.items.length,
         }
-        
+
         // Update queue stats for the PublishingQueue component
         publishingStats = {
           ...publishingStats,
           todayPublished: stats.aiPublishedReplies, // Use existing stats
           todayLimit: publishingSettings.maxPerDay,
-          hourlyRate: publishingSettings.maxPerHour
+          hourlyRate: publishingSettings.maxPerHour,
         }
       }
     } catch (error) {
@@ -385,12 +432,18 @@
     try {
       isPublishing = true
       publishError = null
-      
+
       // Get all approved AI responses that aren't already queued or published
-      const approvedResponses = data.allAiResponses?.filter(resp => 
-        resp.status === 'approved' && 
-        !resp.response_queue?.some(q => q.status && ['pending', 'processing', 'published'].includes(q.status))
-      ) || []
+      const approvedResponses =
+        data.allAiResponses?.filter(
+          (resp) =>
+            resp.status === "approved" &&
+            !resp.response_queue?.some(
+              (q) =>
+                q.status &&
+                ["pending", "processing", "published"].includes(q.status),
+            ),
+        ) || []
 
       if (approvedResponses.length === 0) {
         publishError = "No approved responses available to queue"
@@ -407,7 +460,7 @@
             aiResponseId: response.id,
           }),
         })
-        
+
         if (!res.ok) {
           console.error(`Failed to queue response ${response.id}`)
         }
@@ -421,7 +474,6 @@
       isPublishing = false
     }
   }
-
 
   async function queueSingle(aiResponseId: string) {
     if (!aiResponseId || publishingStates.get(aiResponseId)) return
@@ -464,9 +516,9 @@
           ?.filter(
             (r) =>
               selectedReviewIds.has(r.id) &&
-              r.ai_responses?.some(resp => resp.status === 'draft'),
+              r.ai_responses?.some((resp) => resp.status === "draft"),
           )
-          .flatMap((r) => r.ai_responses?.map(resp => resp.id))
+          .flatMap((r) => r.ai_responses?.map((resp) => resp.id))
           .filter(Boolean) || []
 
       if (aiResponseIds.length === 0) {
@@ -496,9 +548,6 @@
     }
   }
 
-
-
-
   async function editAiResponse(aiResponseId: string, newText: string) {
     try {
       const response = await fetch("/api/v1/reviews/ai-response", {
@@ -522,8 +571,6 @@
       alert("An error occurred while updating response")
     }
   }
-
-
 
   async function saveEdit(aiResponseId: string) {
     if (!editingText.trim()) return
@@ -556,15 +603,15 @@
     }
   }
 
-
-
   $effect(() => {
     if (editingResponseId) {
-      const review = data.reviews?.find(
-        (r) => r.ai_responses?.some(resp => resp.id === editingResponseId)
+      const review = data.reviews?.find((r) =>
+        r.ai_responses?.some((resp) => resp.id === editingResponseId),
       )
       if (review?.ai_responses) {
-        const response = review.ai_responses.find(resp => resp.id === editingResponseId)
+        const response = review.ai_responses.find(
+          (resp) => resp.id === editingResponseId,
+        )
         if (response) {
           editingText = response.response_text
         }
@@ -834,7 +881,9 @@
         />
       </svg>
       <span>{publishError}</span>
-      <button class="btn btn-sm btn-ghost" onclick={() => publishError = null}>Dismiss</button>
+      <button class="btn btn-sm btn-ghost" onclick={() => (publishError = null)}
+        >Dismiss</button
+      >
     </div>
   {/if}
 
@@ -1220,12 +1269,12 @@
                   Clear
                 </button>
 
-                {#if data.reviews?.filter((r) => selectedReviewIds.has(r.id) && r.ai_responses?.some(resp => resp.status === 'draft')).length > 0}
+                {#if data.reviews?.filter((r) => selectedReviewIds.has(r.id) && r.ai_responses?.some((resp) => resp.status === "draft")).length > 0}
                   {@const draftCount =
                     data.reviews?.filter(
                       (r) =>
                         selectedReviewIds.has(r.id) &&
-                        r.ai_responses?.some(resp => resp.status === 'draft'),
+                        r.ai_responses?.some((resp) => resp.status === "draft"),
                     ).length || 0}
                   <button
                     onclick={bulkApprove}
@@ -1354,7 +1403,7 @@
                   >
                 </label>
                 <div class="flex items-center gap-1">
-                  {#each Array.from({length: review.rating}, (_, i) => i) as i (i)}
+                  {#each Array.from({ length: review.rating }, (_, i) => i) as i (i)}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -1455,12 +1504,16 @@
               </div>
 
               <!-- Owner Reply (Manual) -->
-              {#if review.has_owner_reply && review.response_source === 'owner_external'}
-                <div class="bg-success/10 rounded-lg p-3 mb-3 border border-success/20">
+              {#if review.has_owner_reply && review.response_source === "owner_external"}
+                <div
+                  class="bg-success/10 rounded-lg p-3 mb-3 border border-success/20"
+                >
                   <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
                       <p class="text-sm font-medium">Owner Reply</p>
-                      <span class="badge badge-sm badge-success">Published Externally</span>
+                      <span class="badge badge-sm badge-success"
+                        >Published Externally</span
+                      >
                     </div>
                   </div>
                   <p class="text-sm whitespace-pre-wrap">
@@ -1472,7 +1525,7 @@
                     </p>
                   {/if}
                 </div>
-              <!-- AI Response Preview -->
+                <!-- AI Response Preview -->
               {:else if review.ai_responses && review.ai_responses.length > 0}
                 {@const aiResponse = review.ai_responses[0]}
                 {@const isEditing = editingResponseId === aiResponse.id}
@@ -1483,7 +1536,8 @@
                       <span
                         class="badge badge-sm"
                         class:badge-warning={aiResponse.status === "draft"}
-                        class:badge-success={aiResponse.status === "approved" || aiResponse.status === "published"}
+                        class:badge-success={aiResponse.status === "approved" ||
+                          aiResponse.status === "published"}
                         class:badge-info={aiResponse.status === "queued"}
                       >
                         {aiResponse.status}
@@ -1491,8 +1545,10 @@
                       {#if aiResponse.confidence_score}
                         <span
                           class="badge badge-xs"
-                          class:badge-success={aiResponse.confidence_score >= 0.8}
-                          class:badge-warning={aiResponse.confidence_score < 0.8 && aiResponse.confidence_score >= 0.6}
+                          class:badge-success={aiResponse.confidence_score >=
+                            0.8}
+                          class:badge-warning={aiResponse.confidence_score <
+                            0.8 && aiResponse.confidence_score >= 0.6}
                           class:badge-error={aiResponse.confidence_score < 0.6}
                         >
                           {(aiResponse.confidence_score * 100).toFixed(0)}%
@@ -1625,14 +1681,22 @@
 
               <!-- Actions -->
               <div class="card-actions justify-end">
-                {#if review.ai_responses?.some(r => r.status === 'approved') && !review.has_owner_reply}
-                  {@const approvedResponse = review.ai_responses.find(r => r.status === 'approved')}
+                {#if review.ai_responses?.some((r) => r.status === "approved") && !review.has_owner_reply}
+                  {@const approvedResponse = review.ai_responses.find(
+                    (r) => r.status === "approved",
+                  )}
                   {#if approvedResponse}
-                    {@const isQueued = approvedResponse.response_queue && 
-                      Array.isArray(approvedResponse.response_queue) && 
+                    {@const isQueued =
+                      approvedResponse.response_queue &&
+                      Array.isArray(approvedResponse.response_queue) &&
                       approvedResponse.response_queue.length > 0 &&
-                      approvedResponse.response_queue.some(q => q.status && ['pending', 'processing'].includes(q.status))}
-                    {@const isCurrentlyProcessing = publishingStates.get(approvedResponse.id) || false}
+                      approvedResponse.response_queue.some(
+                        (q) =>
+                          q.status &&
+                          ["pending", "processing"].includes(q.status),
+                      )}
+                    {@const isCurrentlyProcessing =
+                      publishingStates.get(approvedResponse.id) || false}
                     {#if isQueued}
                       <div class="flex items-center gap-2 text-sm text-info">
                         <svg
@@ -1693,7 +1757,9 @@
                         d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
                       />
                     </svg>
-                    {review.response_source === 'ai' ? 'AI Published' : 'Replied'}
+                    {review.response_source === "ai"
+                      ? "AI Published"
+                      : "Replied"}
                   </div>
                 {/if}
               </div>
@@ -1770,34 +1836,40 @@
                     <div class="text-sm opacity-50">
                       {review.locations?.name}
                       {#if review.platform !== "google"}
-                        <span class="badge badge-xs ml-1">{review.platform}</span>
+                        <span class="badge badge-xs ml-1"
+                          >{review.platform}</span
+                        >
                       {/if}
                     </div>
                   </div>
                 </td>
                 <td>
                   <div class="rating rating-sm">
-                    {#each Array.from({length: review.rating}, (_, i) => i) as i (i)}
+                    {#each Array.from({ length: review.rating }, (_, i) => i) as i (i)}
                       <span class="mask mask-star-2 bg-orange-400"></span>
                     {/each}
                   </div>
                 </td>
                 <td>
-                  <div class="max-w-xs truncate">{review.review_text || ''}</div>
+                  <div class="max-w-xs truncate">
+                    {review.review_text || ""}
+                  </div>
                 </td>
                 <td>
                   {#if review.has_owner_reply}
                     <span class="badge badge-success">Replied</span>
-                  {:else if review.ai_responses?.some(r => r.status === 'approved')}
+                  {:else if review.ai_responses?.some((r) => r.status === "approved")}
                     <span class="badge badge-warning">Approved</span>
-                  {:else if review.ai_responses?.some(r => r.status === 'draft')}
+                  {:else if review.ai_responses?.some((r) => r.status === "draft")}
                     <span class="badge badge-info">Draft</span>
                   {:else}
                     <span class="badge badge-neutral">New</span>
                   {/if}
                 </td>
                 <td>
-                  <div class="text-sm">{new Date(review.review_date).toLocaleDateString()}</div>
+                  <div class="text-sm">
+                    {new Date(review.review_date).toLocaleDateString()}
+                  </div>
                 </td>
                 <td>
                   <div class="flex gap-1">
@@ -1850,7 +1922,7 @@
 <PublishingQueueModal
   open={showPublishingModal}
   onClose={closePublishingModal}
-  queueItems={queueItems}
+  {queueItems}
   stats={{
     queued: stats.queued,
     published: stats.aiPublishedReplies,

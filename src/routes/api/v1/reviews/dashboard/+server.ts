@@ -88,11 +88,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
         : 0
     const ratingTrend = thisWeekRating - lastWeekRating
 
-    const thisWeekReplied = thisWeekReviews.filter(r => r.has_owner_reply).length
+    const thisWeekReplied = thisWeekReviews.filter(
+      (r) => r.has_owner_reply,
+    ).length
     const thisWeekResponseRate =
       thisWeekCount > 0 ? (thisWeekReplied / thisWeekCount) * 100 : 0
 
-    const lastWeekReplied = lastWeekReviews.filter(r => r.has_owner_reply).length
+    const lastWeekReplied = lastWeekReviews.filter(
+      (r) => r.has_owner_reply,
+    ).length
     const lastWeekResponseRate =
       lastWeekCount > 0 ? (lastWeekReplied / lastWeekCount) * 100 : 0
     const responseRateTrend = thisWeekResponseRate - lastWeekResponseRate

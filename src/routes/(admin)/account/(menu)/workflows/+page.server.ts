@@ -58,7 +58,10 @@ export const load: PageServerLoad = async ({
       )
 
     const workflowStats = (stats || []).reduce(
-      (acc: Record<string, number>, workflow: { workflow_type: string; status: string }) => {
+      (
+        acc: Record<string, number>,
+        workflow: { workflow_type: string; status: string },
+      ) => {
         const key = `${workflow.workflow_type}_${workflow.status}`
         acc[key] = (acc[key] || 0) + 1
         return acc

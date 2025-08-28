@@ -33,7 +33,7 @@ your-app/
 Keep it simple with three main branches:
 
 - **`main`** → Production environment
-- **`develop`** → Staging/preview environment  
+- **`develop`** → Staging/preview environment
 - **`feature/*`** → Feature branches (short-lived)
 
 ## 🚀 GitOps Workflow
@@ -71,12 +71,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'npm'
+          cache: "npm"
       - run: npm ci
       - run: npm run build
       - run: npm run test
       - run: npm run lint
-      
+
   supabase-check:
     runs-on: ubuntu-latest
     steps:
@@ -205,12 +205,14 @@ SUPABASE_SERVICE_ROLE_KEY=prod_service_role
 Configure in GitHub UI for each branch:
 
 #### For `main` branch:
+
 - Require pull request reviews (1 reviewer)
 - Require status checks (CI must pass)
 - Require branches to be up to date
 - Restrict pushes to this branch
 
 #### For `develop` branch:
+
 - Require status checks (CI must pass)
 - Allow auto-merge after checks
 
@@ -224,8 +226,8 @@ Create `.github/workflows/health-check.yml`:
 name: Health Check
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes
-    
+    - cron: "*/15 * * * *" # Every 15 minutes
+
 jobs:
   health:
     runs-on: ubuntu-latest
@@ -233,7 +235,7 @@ jobs:
       - name: Check Production Health
         run: |
           curl -f https://your-app.vercel.app/api/health || exit 1
-      - name: Check Database Health  
+      - name: Check Database Health
         run: |
           # Add your DB health check here
 ```
@@ -241,12 +243,14 @@ jobs:
 ## 🔧 Team Workflow Guidelines
 
 ### For Lead Developer (You)
+
 - Review all PRs to `main`
 - Manage production deployments
 - Handle database schema changes
 - Set up branch protection rules
 
 ### For Junior Developers
+
 - Work only in feature branches
 - Always create PRs to `develop` first
 - Never bypass CI checks
@@ -255,28 +259,33 @@ jobs:
 ## 🚀 Implementation Checklist
 
 ### 1. GitHub Setup
+
 - [ ] Set up GitHub secrets:
   - `SUPABASE_ACCESS_TOKEN`
   - `SUPABASE_PROD_PROJECT_ID`
   - `SUPABASE_PREVIEW_PROJECT_ID`
 
 ### 2. Supabase Configuration
+
 - [ ] Enable GitHub integration
 - [ ] Set up automatic branching
 - [ ] Configure preview branch settings
 
 ### 3. Vercel Configuration
+
 - [ ] Install Supabase integration
 - [ ] Set up preview deployments
 - [ ] Configure environment variables
 
 ### 4. Repository Protection
+
 - [ ] Set up branch protection for `main`
 - [ ] Require PR reviews
 - [ ] Require CI checks
 - [ ] Configure environments in GitHub
 
 ### 5. Team Onboarding
+
 - [ ] Create developer documentation
 - [ ] Set up local development environment
 - [ ] Train junior developers on workflow
@@ -295,7 +304,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 ### `environments/production.env`
 
 ```env
-# Production Environment Variables  
+# Production Environment Variables
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
@@ -307,15 +316,18 @@ SUPABASE_SERVICE_ROLE_KEY=
 # Deployment Process
 
 ## Quick Reference
+
 - Feature development: Always branch from `develop`
 - Staging deployment: Merge PR to `develop`
 - Production deployment: Merge PR to `main`
 
 ## Emergency Procedures
+
 - Rollback: Revert commit on `main` branch
 - Hotfix: Create hotfix branch from `main`, merge back to both `main` and `develop`
 
 ## Database Migrations
+
 - Always test locally first
 - Preview branches automatically created
 - Never edit migrations after they've been applied to production

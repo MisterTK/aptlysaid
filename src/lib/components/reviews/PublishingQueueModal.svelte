@@ -15,7 +15,13 @@
     isPaused?: boolean
   }
 
-  let { open = false, onClose, queueItems = [], stats, isPaused = false }: Props = $props()
+  let {
+    open = false,
+    onClose,
+    queueItems = [],
+    stats,
+    isPaused = false,
+  }: Props = $props()
 
   function formatTime(date: Date | string | null) {
     if (!date) return "N/A"
@@ -131,12 +137,16 @@
           />
         </svg>
         <div>
-          <h3 class="font-bold">Queue Status: {isPaused ? "Paused" : "Active"}</h3>
+          <h3 class="font-bold">
+            Queue Status: {isPaused ? "Paused" : "Active"}
+          </h3>
           <div class="text-xs">
             {#if isPaused}
               Publishing is currently paused. Responses will remain in queue.
             {:else if queueItems.length > 0}
-              Next response will be published at {formatTime(queueItems[0]?.scheduledTime)}
+              Next response will be published at {formatTime(
+                queueItems[0]?.scheduledTime,
+              )}
             {:else}
               No responses queued for publishing.
             {/if}
@@ -147,7 +157,9 @@
       <!-- Queue Items -->
       {#if queueItems.length > 0}
         <div class="mb-6">
-          <h4 class="font-semibold mb-3">📋 Queued Responses ({queueItems.length})</h4>
+          <h4 class="font-semibold mb-3">
+            📋 Queued Responses ({queueItems.length})
+          </h4>
           <div class="overflow-x-auto">
             <table class="table table-zebra">
               <thead>
@@ -193,7 +205,9 @@
           </div>
         </div>
       {:else}
-        <div class="flex flex-col items-center justify-center py-8 text-base-content/60">
+        <div
+          class="flex flex-col items-center justify-center py-8 text-base-content/60"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -209,7 +223,9 @@
             />
           </svg>
           <p class="text-lg font-medium mb-2">No items in queue</p>
-          <p class="text-sm">Approved responses will appear here for publishing</p>
+          <p class="text-sm">
+            Approved responses will appear here for publishing
+          </p>
         </div>
       {/if}
 

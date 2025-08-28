@@ -147,7 +147,8 @@ export async function sendEmail(
   }
 
   const to_emails = Array.isArray(to) ? to : [to]
-  const from_email = from || process.env.PRIVATE_FROM_ADMIN_EMAIL || "admin@localhost"
+  const from_email =
+    from || process.env.PRIVATE_FROM_ADMIN_EMAIL || "admin@localhost"
 
   console.log(
     `Sending email | To: ${to_emails.join(", ")} | Subject: ${subject}`,

@@ -37,7 +37,7 @@ export const POST: RequestHandler = async ({ url, fetch, request }) => {
     method: "POST",
     headers: headers,
     body: clonedRequest.body,
-    duplex: 'half',
+    duplex: "half",
   })
 }
 
@@ -61,7 +61,7 @@ export const PUT: RequestHandler = async ({ url, fetch, request }) => {
     method: "PUT",
     headers: headers,
     body: clonedRequest.body,
-    duplex: 'half',
+    duplex: "half",
   })
 }
 
@@ -85,7 +85,7 @@ export const PATCH: RequestHandler = async ({ url, fetch, request }) => {
     method: "PATCH",
     headers: headers,
     body: clonedRequest.body,
-    duplex: 'half',
+    duplex: "half",
   })
 }
 

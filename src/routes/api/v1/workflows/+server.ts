@@ -39,10 +39,7 @@ export const GET: RequestHandler = async ({
     const recentWorkflows = workflows.filter((w) => w.created_at >= oneDayAgo)
 
     const workflowStats = recentWorkflows.reduce(
-      (
-        acc: Record<string, number>,
-        workflow: unknown,
-      ) => {
+      (acc: Record<string, number>, workflow: unknown) => {
         const key = `${workflow.workflow_type}_${workflow.status}`
         acc[key] = (acc[key] || 0) + 1
         return acc

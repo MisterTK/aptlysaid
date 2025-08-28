@@ -48,14 +48,16 @@ export const load: PageServerLoad = async ({
 
   const { data: dbReviews, error } = await supabaseServiceRole
     .from("reviews")
-    .select(`
+    .select(
+      `
       *,
       ai_responses(
         *,
         response_queue(*)
       ),
       locations(id, name, address)
-    `)
+    `,
+    )
     .eq("tenant_id", orgId)
     .order("review_date", { ascending: false })
     .range(0, 4999)
@@ -64,20 +66,23 @@ export const load: PageServerLoad = async ({
     console.error("Error fetching reviews from database:", error)
   }
 
-  const allAiResponses = dbReviews?.flatMap(r => r.ai_responses) || []
+  const allAiResponses = dbReviews?.flatMap((r) => r.ai_responses) || []
 
   // Debug logging
-  console.log('Sample DB Review:', JSON.stringify(dbReviews?.[0], null, 2))
-  console.log('Sample AI Response:', JSON.stringify(allAiResponses?.[0], null, 2))
-  
+  console.log("Sample DB Review:", JSON.stringify(dbReviews?.[0], null, 2))
+  console.log(
+    "Sample AI Response:",
+    JSON.stringify(allAiResponses?.[0], null, 2),
+  )
+
   // Also get queue items separately for debugging
   const { data: queueDebug } = await supabaseServiceRole
     .from("response_queue")
     .select("*, ai_responses(id, status)")
     .eq("tenant_id", orgId)
     .in("status", ["pending", "processing"])
-  
-  console.log('Queue items:', JSON.stringify(queueDebug, null, 2))
+
+  console.log("Queue items:", JSON.stringify(queueDebug, null, 2))
 
   const { data: businessGuidance } = await supabaseServiceRole
     .from("business_guidance")
@@ -93,7 +98,14 @@ export const load: PageServerLoad = async ({
 
   const reviews = dbReviews || []
 
-  const uniqueLocations = [...new Map(dbReviews?.map(r => r.locations).filter(Boolean).map(loc => [loc.id, loc])).values()]
+  const uniqueLocations = [
+    ...new Map(
+      dbReviews
+        ?.map((r) => r.locations)
+        .filter(Boolean)
+        .map((loc) => [loc.id, loc]),
+    ).values(),
+  ]
 
   const accounts: Account[] =
     uniqueLocations.length > 0
@@ -111,7 +123,8 @@ export const load: PageServerLoad = async ({
         ]
       : []
 
-  const hasApprovedResponses = allAiResponses?.some((r) => r.status === "approved") || false
+  const hasApprovedResponses =
+    allAiResponses?.some((r) => r.status === "approved") || false
   const locations = uniqueLocations.map((loc) => loc.name)
 
   return {

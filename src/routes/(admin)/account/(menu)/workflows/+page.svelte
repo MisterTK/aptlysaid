@@ -253,7 +253,9 @@
               <tbody>
                 {#each monitoring.active_workflows as workflow (workflow.id)}
                   <tr>
-                    <td class="font-medium">{workflow.workflow_type || workflow.workflow_name}</td>
+                    <td class="font-medium"
+                      >{workflow.workflow_type || workflow.workflow_name}</td
+                    >
                     <td>{workflow.current_step}</td>
                     <td>
                       <span
@@ -332,7 +334,9 @@
             <tbody>
               {#each workflows as workflow (workflow.id)}
                 <tr>
-                  <td class="font-medium">{workflow.workflow_type || workflow.workflow_name}</td>
+                  <td class="font-medium"
+                    >{workflow.workflow_type || workflow.workflow_name}</td
+                  >
                   <td>{workflow.current_step}</td>
                   <td>
                     <span class="badge {getStatusBadge(workflow.status)}">
@@ -449,7 +453,9 @@
               <tbody>
                 {#each monitoring.workflow_metrics as metric (metric.id || metric.workflow_type)}
                   <tr>
-                    <td class="font-medium">{metric.workflow_type || metric.workflow_name}</td>
+                    <td class="font-medium"
+                      >{metric.workflow_type || metric.workflow_name}</td
+                    >
                     <td>
                       <span class="badge {getStatusBadge(metric.status)}">
                         {metric.status}

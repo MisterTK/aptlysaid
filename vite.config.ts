@@ -11,7 +11,7 @@ export default defineConfig({
         order: "post",
         sequential: false,
         handler: async () => {
-          console.log("Building search index...")
+          console.warn("Building search index...")
           await buildAndCacheSearchIndex()
         },
       },
@@ -22,17 +22,29 @@ export default defineConfig({
     globals: true,
   },
   build: {
+    target: "esnext",
+    minify: "esbuild",
     rollupOptions: {
       onwarn(warning, warn) {
         if (warning.code === "UNUSED_EXTERNAL_IMPORT") return
         if (warning.code === "CIRCULAR_DEPENDENCY") return
         warn(warning)
       },
+      output: {
+        manualChunks: (id) => {
+          // Group node_modules into vendor chunk
+          if (id.includes("node_modules")) {
+            return "vendor";
+          }
+        },
+      },
     },
   },
   esbuild: {
+    target: "esnext",
     tsconfigRaw: {
       compilerOptions: {
+        useDefineForClassFields: false,
       },
     },
   },

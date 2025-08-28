@@ -39,8 +39,8 @@ export const PATCH: RequestHandler = async ({
     for (let i = 0; i < queueItems.length; i++) {
       const { error } = await supabaseServiceRole
         .from("response_queue")
-        .update({ 
-          updated_at: new Date(Date.now() + i * 1000).toISOString() // Stagger timestamps by 1 second
+        .update({
+          updated_at: new Date(Date.now() + i * 1000).toISOString(), // Stagger timestamps by 1 second
         })
         .eq("id", queueItems[i].id)
         .eq("tenant_id", tenantId)

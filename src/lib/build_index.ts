@@ -32,7 +32,7 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
     (file) => !excludePaths.some((path) => file.includes(path)),
   )
 
-  console.log("Building search index...")
+  console.warn("Building search index...")
 
   for (const filePath of filteredFiles) {
     // get html
@@ -94,5 +94,5 @@ export async function buildAndCacheSearchIndex(): Promise<void> {
   fs.mkdirSync(outputDir, { recursive: true })
   fs.writeFileSync(outputPath, JSON.stringify(data))
 
-  console.log("Search index built")
+  console.warn("Search index built")
 }

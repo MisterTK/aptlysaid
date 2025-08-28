@@ -3,18 +3,15 @@ import typography from "@tailwindcss/typography"
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./src/**/*.{html,js,svelte,ts}",
-    "./src/app.html"
-  ],
+  content: ["./src/**/*.{html,js,svelte,ts}", "./src/app.html"],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
       colors: {
-        primary: 'var(--color-primary)',
-        secondary: 'var(--color-secondary)',
+        primary: "var(--color-primary)",
+        secondary: "var(--color-secondary)",
       },
     },
   },
@@ -25,10 +22,10 @@ export default {
       "dark",
       {
         corporate: {
-          "primary": "#570df8",
-          "secondary": "#f000b8",
-          "accent": "#37cdbe",
-          "neutral": "#3d4451",
+          primary: "#570df8",
+          secondary: "#f000b8",
+          accent: "#37cdbe",
+          neutral: "#3d4451",
           "base-100": "#ffffff",
         },
       },
@@ -47,5 +44,10 @@ export default {
   },
   future: {
     hoverOnlyWhenSupported: true,
+  },
+  safelist: [],
+  blocklist: [],
+  experimental: {
+    optimizeUniversalDefaults: true,
   },
 }
