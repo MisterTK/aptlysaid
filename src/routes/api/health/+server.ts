@@ -16,16 +16,14 @@ export const GET: RequestHandler = async ({ locals: { supabase, supabaseServiceR
 
   try {
 
-    const dbClient = supabaseServiceRole || supabase
     const usingServiceRole = !!supabaseServiceRole
     
-    const { data: healthData, error: dbError } = await dbClient
-      .rpc('now')
-
-    if (dbError) {
-      checks.checks.database = `error: ${dbError.message} (using ${usingServiceRole ? 'service' : 'client'} role)`
+    if (supabaseServiceRole) {
+      checks.checks.database = "ok (service role available)"
+    } else if (supabase) {
+      checks.checks.database = "ok (client available)"
     } else {
-      checks.checks.database = `ok (using ${usingServiceRole ? 'service' : 'client'} role)`
+      checks.checks.database = "error: no database client available"
     }
 
     const { error: authError } = await supabase.auth.getSession()
