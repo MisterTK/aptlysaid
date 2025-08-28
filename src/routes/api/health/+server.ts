@@ -16,12 +16,12 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
 
   try {
 
-    const { error: dbError } = await supabase
+    const { data, error: dbError } = await supabase
       .from("profiles")
       .select("id")
       .limit(1)
 
-    checks.checks.database = dbError ? "error" : "ok"
+    checks.checks.database = dbError ? `error: ${dbError.message}` : "ok"
 
     const { error: authError } = await supabase.auth.getSession()
     checks.checks.auth = authError ? "error" : "ok"
