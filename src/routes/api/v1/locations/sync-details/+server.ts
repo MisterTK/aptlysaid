@@ -17,13 +17,12 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Get all locations
     const { locations } = await v2Client.getLocations()
 
     return json({ locations, success: true })
@@ -51,13 +50,12 @@ export const POST: RequestHandler = async ({
   const { locationId } = await request.json()
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // If no specific location ID, sync all locations
     if (!locationId) {
       const { locations } = await v2Client.getLocations()
       const workflowIds = []
@@ -73,7 +71,7 @@ export const POST: RequestHandler = async ({
         message: `Started sync for ${workflowIds.length} locations`,
       })
     } else {
-      // Sync specific location
+
       const { workflowId } = await v2Client.syncLocation(locationId)
 
       return json({

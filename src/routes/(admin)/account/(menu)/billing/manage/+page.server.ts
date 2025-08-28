@@ -14,7 +14,6 @@ export const load: PageServerLoad = async ({
     redirect(303, "/login")
   }
 
-  // Get or create Stripe customer
   const { error: idError, customerId } = await getOrCreateCustomerId({
     supabaseServiceRole,
     user,
@@ -28,7 +27,6 @@ export const load: PageServerLoad = async ({
     })
   }
 
-  // Create billing portal session with modern configuration
   const { session: portalSession, error: portalError } =
     await createBillingPortalSession({
       customerId,

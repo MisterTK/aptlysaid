@@ -13,7 +13,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
   const { session } = await locals.safeGetSession()
   const supabase = locals.supabase
 
-  // Get invitation details (public access allowed for this)
   const { data: invitation, error: invitationError } = await supabase
     .from("tenant_invitations")
     .select("id, email, role, expires_at, status, tenant_id")
@@ -26,7 +25,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     throw error(404, "Invitation not found or has expired")
   }
 
-  // Get tenant details separately
   const { data: tenant, error: orgError } = await supabase
     .from("tenants")
     .select("id, name, slug")
@@ -64,7 +62,6 @@ export const actions: Actions = {
 
     const { user } = await locals.safeGetSession()
 
-    // If user is not logged in, redirect to login with invitation token
     if (!user) {
       const loginUrl = new URL("/login", url.origin)
       loginUrl.searchParams.set("invitation", token)
@@ -78,7 +75,6 @@ export const actions: Actions = {
     try {
       const tenantId = await userMgmt.acceptInvitation(token, user.id)
 
-      // Set the new tenant as current
       setCurrentTenant(tenantId, cookies)
 
       throw redirect(303, "/account?invited=true")
@@ -100,7 +96,6 @@ export const actions: Actions = {
 
     const supabase = locals.supabase
 
-    // Mark invitation as cancelled
     const { error: updateError } = await supabase
       .from("tenant_invitations")
       .update({ status: "cancelled" })

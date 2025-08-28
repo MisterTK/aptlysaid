@@ -2,7 +2,6 @@ import { json } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 import { createAdminClient } from "$lib/server/supabase-admin"
 
-// Get upsell items
 export const GET: RequestHandler = async ({ url, locals }) => {
   const session = await locals.safeGetSession()
   if (!session) {
@@ -17,7 +16,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   const adminClient = createAdminClient()
 
   try {
-    // Verify user has access
+
     const { data: membership } = await adminClient
       .from("tenant_users")
       .select("role")
@@ -29,7 +28,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
       return json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Get upsell items
     const { data: items, error } = await adminClient
       .from("upsell_items")
       .select("*")
@@ -49,7 +47,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   }
 }
 
-// Create upsell item
 export const POST: RequestHandler = async ({ request, locals }) => {
   const session = await locals.safeGetSession()
   if (!session) {
@@ -64,14 +61,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       name,
       description,
       priority = 0,
-      isActive = true, // eslint-disable-line @typescript-eslint/no-unused-vars
+      isActive = true,
     } = await request.json()
 
     if (!tenantId || !name) {
       return json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Verify user has admin access
     const { data: membership } = await adminClient
       .from("tenant_users")
       .select("role")
@@ -83,7 +79,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
-    // Create upsell item
     const { data: item, error } = await adminClient
       .from("upsell_items")
       .insert({
@@ -107,7 +102,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
 }
 
-// Update upsell item
 export const PATCH: RequestHandler = async ({ request, locals }) => {
   const session = await locals.safeGetSession()
   if (!session) {
@@ -123,7 +117,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Item ID is required" }, { status: 400 })
     }
 
-    // Get the item to verify organization
     const { data: existingItem } = await adminClient
       .from("upsell_items")
       .select("tenant_id")
@@ -134,7 +127,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Item not found" }, { status: 404 })
     }
 
-    // Verify user has admin access
     const { data: membership } = await adminClient
       .from("tenant_users")
       .select("role")
@@ -146,7 +138,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
-    // Update upsell item
     const updateData: Record<string, string | number | boolean | null> = {
       updated_at: new Date().toISOString(),
     }
@@ -175,7 +166,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
   }
 }
 
-// Delete upsell item
 export const DELETE: RequestHandler = async ({ request, locals }) => {
   const session = await locals.safeGetSession()
   if (!session) {
@@ -191,7 +181,6 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Item ID is required" }, { status: 400 })
     }
 
-    // Get the item to verify organization
     const { data: existingItem } = await adminClient
       .from("upsell_items")
       .select("tenant_id")
@@ -202,7 +191,6 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Item not found" }, { status: 404 })
     }
 
-    // Verify user has admin access
     const { data: membership } = await adminClient
       .from("tenant_users")
       .select("role")
@@ -214,7 +202,6 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
       return json({ error: "Insufficient permissions" }, { status: 403 })
     }
 
-    // Delete upsell item
     const { error } = await adminClient
       .from("upsell_items")
       .delete()

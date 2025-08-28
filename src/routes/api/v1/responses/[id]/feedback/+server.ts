@@ -22,7 +22,6 @@ export const POST: RequestHandler = async ({
   try {
     const { feedback, issues = [] } = await request.json()
 
-    // Verify the AI response belongs to the organization
     const { data: aiResponse, error: verifyError } = await supabaseServiceRole
       .from("ai_responses")
       .select("*")
@@ -34,7 +33,6 @@ export const POST: RequestHandler = async ({
       return json({ error: "AI response not found" }, { status: 404 })
     }
 
-    // Update the AI response status to rejected
     const { error: updateError } = await supabaseServiceRole
       .from("ai_responses")
       .update({
@@ -47,7 +45,6 @@ export const POST: RequestHandler = async ({
 
     if (updateError) throw updateError
 
-    // Store feedback for improving AI guidance
     const { error: feedbackError } = await supabaseServiceRole
       .from("ai_response_feedback")
       .insert({
@@ -61,12 +58,11 @@ export const POST: RequestHandler = async ({
 
     if (feedbackError) {
       console.error("Failed to store feedback:", feedbackError)
-      // Don't fail the request if feedback storage fails
+
     }
 
-    // Update business guidance based on feedback patterns
     if (issues.includes("wrong_tone")) {
-      // Could trigger an update to the business guidance tone settings
+
       console.log("User reported wrong tone - consider updating guidance")
     }
 

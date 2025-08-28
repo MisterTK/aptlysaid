@@ -15,7 +15,7 @@ interface BusinessLocation {
     | string
   primaryPhone?: string
   websiteUrl?: string
-  accountId?: string // Track which account owns this location (if known)
+  accountId?: string
 }
 
 interface BusinessAccount {
@@ -29,7 +29,7 @@ interface BusinessAccount {
 
 interface Review {
   reviewId?: string
-  name?: string // Google's resource name format (e.g., accounts/123/locations/456/reviews/789)
+  name?: string
   reviewer: {
     displayName: string
     profilePhotoUrl?: string
@@ -62,15 +62,14 @@ interface Invitation {
 interface LocationIdentifiers {
   accountId?: string
   locationId: string
-  fullName?: string // Full resource name like accounts/123/locations/456
+  fullName?: string
 }
 
-// API endpoints for different Google My Business services
 const GOOGLE_MY_BUSINESS_API =
   "https://mybusinessbusinessinformation.googleapis.com/v1"
 const GOOGLE_MY_BUSINESS_ACCOUNT_MANAGEMENT_API =
   "https://mybusinessaccountmanagement.googleapis.com/v1"
-// Reviews API requires the v4 endpoint
+
 const GOOGLE_MY_BUSINESS_REVIEWS_API = "https://mybusiness.googleapis.com/v4"
 
 export class GoogleMyBusinessService {
@@ -87,11 +86,9 @@ export class GoogleMyBusinessService {
     },
   ) {}
 
-  // Helper method to extract location identifiers from various formats
   private parseLocationName(locationName: string): LocationIdentifiers {
     const parts = locationName.split("/")
 
-    // Handle full resource name: accounts/123/locations/456
     if (
       parts.length >= 4 &&
       parts[0] === "accounts" &&
@@ -104,7 +101,6 @@ export class GoogleMyBusinessService {
       }
     }
 
-    // Handle partial name: locations/456
     if (parts.length >= 2 && parts[0] === "locations") {
       return {
         locationId: parts[1],
@@ -112,7 +108,6 @@ export class GoogleMyBusinessService {
       }
     }
 
-    // Handle just the ID
     return {
       locationId: locationName
         .replace("locations/", "")
@@ -121,7 +116,6 @@ export class GoogleMyBusinessService {
     }
   }
 
-  // Helper to determine if we should use wildcard approach
   private shouldUseWildcard(accountId?: string): boolean {
     return !accountId || accountId === "-" || accountId === "wildcard"
   }
@@ -132,7 +126,7 @@ export class GoogleMyBusinessService {
     retryCount = 0,
   ): Promise<Response> {
     const maxRetries = 3
-    const baseDelay = 1000 // 1 second
+    const baseDelay = 1000
 
     try {
       const response = await fetch(url, {
@@ -145,17 +139,15 @@ export class GoogleMyBusinessService {
       })
 
       if (response.status === 401) {
-        // Token expired, try to refresh
+
         await this.refreshAccessToken()
 
-        // Retry the request with new token (don't count as retry attempt)
         return this.makeRequest(url, options, retryCount)
       }
 
-      // Handle retryable errors with exponential backoff
       if (this.shouldRetry(response.status) && retryCount < maxRetries) {
-        const delay = baseDelay * Math.pow(2, retryCount) // Exponential backoff: 1s, 2s, 4s
-        const jitter = Math.random() * 1000 // Add jitter to prevent thundering herd
+        const delay = baseDelay * Math.pow(2, retryCount)
+        const jitter = Math.random() * 1000
 
         console.warn(
           `Request failed with status ${response.status}, retrying in ${delay + jitter}ms (attempt ${retryCount + 1}/${maxRetries})`,
@@ -167,7 +159,7 @@ export class GoogleMyBusinessService {
 
       return response
     } catch (error) {
-      // Network errors - retry with exponential backoff
+
       if (this.isNetworkError(error) && retryCount < maxRetries) {
         const delay = baseDelay * Math.pow(2, retryCount)
         const jitter = Math.random() * 1000
@@ -184,21 +176,15 @@ export class GoogleMyBusinessService {
     }
   }
 
-  /**
-   * Determine if a status code should trigger a retry
-   */
   private shouldRetry(status: number): boolean {
     return (
-      status === 429 || // Too Many Requests
-      status === 502 || // Bad Gateway
-      status === 503 || // Service Unavailable
-      status === 504 // Gateway Timeout
+      status === 429 ||
+      status === 502 ||
+      status === 503 ||
+      status === 504
     )
   }
 
-  /**
-   * Determine if an error is a network error worth retrying
-   */
   private isNetworkError(error: unknown): boolean {
     return (
       error instanceof Error &&
@@ -232,13 +218,11 @@ export class GoogleMyBusinessService {
         const error = await tokenResponse.json()
         console.error("Token refresh failed:", error)
 
-        // If refresh fails due to invalid grant, mark token as invalid (don't retry)
         if (error.error === "invalid_grant") {
-          // Token is permanently invalid, need re-authentication
+
           throw new Error("REFRESH_TOKEN_INVALID")
         }
 
-        // Retry on temporary errors
         if (
           (error.error === "temporarily_unavailable" ||
             tokenResponse.status >= 500) &&
@@ -271,7 +255,7 @@ export class GoogleMyBusinessService {
         })
       }
     } catch (error) {
-      // Network errors - retry with exponential backoff
+
       if (this.isNetworkError(error) && retryCount < maxRetries) {
         const delay = baseDelay * Math.pow(2, retryCount)
         const jitter = Math.random() * 1000
@@ -303,7 +287,7 @@ export class GoogleMyBusinessService {
   }
 
   async getLocations(accountId: string): Promise<BusinessLocation[]> {
-    // Remove 'accounts/' prefix if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
 
     const response = await this.makeRequest(
@@ -320,11 +304,10 @@ export class GoogleMyBusinessService {
   }
 
   async getLocationsForAccount(accountId: string): Promise<BusinessLocation[]> {
-    // This method maintains backward compatibility
+
     return this.getLocations(accountId)
   }
 
-  // Get ALL locations the user has access to using wildcard account
   async getAllLocationsWithWildcard(): Promise<BusinessLocation[]> {
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/accounts/-/locations?readMask=name,title`,
@@ -341,15 +324,14 @@ export class GoogleMyBusinessService {
     const data = await response.json()
     const locations = data.locations || []
 
-    // Process locations to ensure they have the expected structure
     return locations.map((location: Record<string, unknown>) => {
       const identifiers = this.parseLocationName(String(location.name || ""))
       return {
         name: location.name,
         locationId: identifiers.locationId,
         title: location.title,
-        accountId: identifiers.accountId, // Will be populated if the name includes account info
-        // These fields won't be available with the limited readMask, but we keep them for compatibility
+        accountId: identifiers.accountId,
+
         address: location.address,
         primaryPhone: location.primaryPhone,
         websiteUrl: location.websiteUrl,
@@ -358,8 +340,7 @@ export class GoogleMyBusinessService {
   }
 
   async getInvitations(): Promise<Invitation[]> {
-    // The invitations endpoint requires listing through each account
-    // We need to get all accounts first, then check invitations for each
+
     const allInvitations: Invitation[] = []
 
     try {
@@ -378,7 +359,7 @@ export class GoogleMyBusinessService {
               allInvitations.push(...data.invitations)
             }
           } else {
-            // Log but don't fail completely if one account fails
+
             console.error(
               `Failed to fetch invitations for account ${accountName}:`,
               await response.text(),
@@ -416,11 +397,9 @@ export class GoogleMyBusinessService {
     return true
   }
 
-  // Get all locations the user has access to (including those without account access)
   async getAllAccessibleLocations(): Promise<BusinessLocation[]> {
     try {
-      // Use the wildcard account approach to get ALL locations at once
-      // This includes both account-owned locations AND directly shared locations
+
       const wildcardLocations = await this.getAllLocationsWithWildcard()
 
       if (wildcardLocations.length > 0) {
@@ -430,7 +409,6 @@ export class GoogleMyBusinessService {
         return wildcardLocations
       }
 
-      // Fallback to the old approach if wildcard fails or returns no results
       console.log(
         "Wildcard approach returned no locations, falling back to account-based approach",
       )
@@ -444,14 +422,12 @@ export class GoogleMyBusinessService {
     }
   }
 
-  // Legacy method that iterates through accounts - kept as fallback
   private async getAllAccessibleLocationsViaAccounts(): Promise<
     BusinessLocation[]
   > {
     const allLocations: BusinessLocation[] = []
-    const locationIds = new Set<string>() // Track unique locations
+    const locationIds = new Set<string>()
 
-    // Get all locations from accounts we own or have access to
     const accounts = await this.getAccounts()
     for (const account of accounts) {
       try {
@@ -472,7 +448,6 @@ export class GoogleMyBusinessService {
       }
     }
 
-    // Check for any pending invitations that might give us access to additional locations
     const invitations = await this.getInvitations()
     if (invitations.length > 0) {
       console.log("Found pending invitations:", invitations)
@@ -481,7 +456,6 @@ export class GoogleMyBusinessService {
     return allLocations
   }
 
-  // Dedicated method for fetching reviews using wildcard approach
   async getReviewsWithWildcard(locationId: string): Promise<Review[]> {
     const cleanLocationId = locationId.replace("locations/", "")
 
@@ -497,8 +471,6 @@ export class GoogleMyBusinessService {
           errorText,
         )
 
-        // If we get a specific error about the location not existing with wildcard,
-        // it might mean the user doesn't have access to this location
         if (response.status === 404 || errorText.includes("NOT_FOUND")) {
           console.warn(
             `Location ${locationId} might not be accessible with current credentials`,
@@ -516,18 +488,15 @@ export class GoogleMyBusinessService {
   }
 
   async getReviews(accountId: string, locationId: string): Promise<Review[]> {
-    // Clean the IDs
+
     const cleanLocationId = locationId.replace("locations/", "")
 
-    // If we should use wildcard (no account, or account is wildcard indicator)
     if (this.shouldUseWildcard(accountId)) {
       return this.getReviewsWithWildcard(cleanLocationId)
     }
 
-    // Try the direct approach first with specific account
     const cleanAccountId = accountId.replace("accounts/", "")
 
-    // Check if accountId and locationId are the same (common mistake)
     if (cleanAccountId === cleanLocationId) {
       console.warn(
         `Account ID and Location ID are the same (${cleanAccountId}), this is likely an error. Using wildcard approach.`,
@@ -544,7 +513,6 @@ export class GoogleMyBusinessService {
       return data.reviews || []
     }
 
-    // Log failure and try wildcard approach as fallback
     const errorText = await response.text()
     console.warn(
       `Direct reviews fetch failed for account ${accountId}, location ${locationId}: ${errorText}`,
@@ -554,11 +522,9 @@ export class GoogleMyBusinessService {
     return this.getReviewsWithWildcard(cleanLocationId)
   }
 
-  // Get reviews using the full location name (e.g., "accounts/123/locations/456")
   async getReviewsByLocationName(locationName: string): Promise<Review[]> {
     const identifiers = this.parseLocationName(locationName)
 
-    // If we have a full location name with account, try direct approach first
     if (identifiers.fullName && identifiers.accountId) {
       const response = await this.makeRequest(
         `${GOOGLE_MY_BUSINESS_REVIEWS_API}/${identifiers.fullName}/reviews`,
@@ -568,20 +534,17 @@ export class GoogleMyBusinessService {
         const data = await response.json()
         const reviews = data.reviews || []
 
-        // Add the location name to each review for context
         return reviews.map((review: Review) => ({
           ...review,
           locationName,
         }))
       }
 
-      // If direct approach fails, log the error
       const errorText = await response.text()
       console.warn(
         `Direct reviews fetch failed for ${locationName}: ${errorText}`,
       )
 
-      // Check if it's an access issue vs other errors
       if (response.status === 403 || errorText.includes("PERMISSION_DENIED")) {
         console.log(
           "Permission denied with direct access, trying wildcard approach...",
@@ -589,11 +552,9 @@ export class GoogleMyBusinessService {
       }
     }
 
-    // Use wildcard approach as fallback or primary method
     try {
       const reviews = await this.getReviewsWithWildcard(identifiers.locationId)
 
-      // Add the location name to each review for context
       return reviews.map((review: Review) => ({
         ...review,
         locationName,
@@ -610,11 +571,10 @@ export class GoogleMyBusinessService {
     reviewId: string,
     comment: string,
   ): Promise<boolean> {
-    // Remove prefixes if present
+
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
 
-    // If using wildcard approach
     if (this.shouldUseWildcard(accountId)) {
       const response = await this.makeRequest(
         `${GOOGLE_MY_BUSINESS_REVIEWS_API}/accounts/-/locations/${cleanLocationId}/reviews/${cleanReviewId}/reply`,
@@ -633,7 +593,6 @@ export class GoogleMyBusinessService {
       return true
     }
 
-    // Direct approach with specific account
     const cleanAccountId = accountId.replace("accounts/", "")
 
     const response = await this.makeRequest(
@@ -648,7 +607,6 @@ export class GoogleMyBusinessService {
       const errorText = await response.text()
       console.error("Failed to reply to review:", errorText)
 
-      // If permission denied, we could try wildcard as fallback
       if (response.status === 403 || errorText.includes("PERMISSION_DENIED")) {
         console.log("Attempting wildcard approach for reply...")
         const wildcardResponse = await this.makeRequest(
@@ -670,12 +628,11 @@ export class GoogleMyBusinessService {
     return true
   }
 
-  // Reply to a review using the full review name (e.g., "accounts/123/locations/456/reviews/789")
   async replyToReviewByName(
     reviewName: string,
     comment: string,
   ): Promise<boolean> {
-    // First try with the provided review name
+
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_REVIEWS_API}/${reviewName}/reply`,
       {
@@ -691,9 +648,8 @@ export class GoogleMyBusinessService {
     const errorText = await response.text()
     console.error("Failed to reply to review by name:", errorText)
 
-    // If permission denied, try wildcard approach
     if (response.status === 403 || errorText.includes("PERMISSION_DENIED")) {
-      // Extract location and review IDs from the full name
+
       const parts = reviewName.split("/")
       if (
         parts.length >= 6 &&
@@ -730,7 +686,7 @@ export class GoogleMyBusinessService {
     locationId: string,
     reviewId: string,
   ): Promise<boolean> {
-    // Remove prefixes if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
@@ -750,7 +706,6 @@ export class GoogleMyBusinessService {
     return true
   }
 
-  // Delete a review reply using the full review name (e.g., "accounts/123/locations/456/reviews/789")
   async deleteReviewReplyByName(reviewName: string): Promise<boolean> {
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_REVIEWS_API}/${reviewName}/reply`,
@@ -771,7 +726,7 @@ export class GoogleMyBusinessService {
   }
 
   async getBusinessInfo(accountId: string, locationId: string) {
-    // Remove prefixes if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
 
@@ -787,7 +742,6 @@ export class GoogleMyBusinessService {
     return await response.json()
   }
 
-  // Get business info using the full location name (e.g., "accounts/123/locations/456")
   async getBusinessInfoByLocationName(locationName: string) {
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/${locationName}?readMask=name,title,phoneNumbers,websiteUri,regularHours,specialHours`,
@@ -804,7 +758,6 @@ export class GoogleMyBusinessService {
     return await response.json()
   }
 
-  // Get all reviews for all accessible locations
   async getAllReviews(): Promise<
     { location: BusinessLocation; reviews: Review[] }[]
   > {
@@ -829,28 +782,24 @@ export class GoogleMyBusinessService {
     return allReviews
   }
 
-  // Get reviews using the most optimal approach based on available information
   async getReviewsOptimal(
     locationInfo: string | { accountId?: string; locationId: string },
   ): Promise<Review[]> {
-    // If we get a string, parse it
+
     if (typeof locationInfo === "string") {
       return this.getReviewsByLocationName(locationInfo)
     }
 
-    // If we have an object with IDs
     const { accountId, locationId } = locationInfo
 
-    // Use the standard getReviews method which has fallback logic
     return this.getReviews(accountId || "-", locationId)
   }
 
-  // Get detailed location information using wildcard API
   async getLocationDetailsWithWildcard(locationId: string) {
     const cleanLocationId = locationId.replace("locations/", "")
 
     try {
-      // Use wildcard account with comprehensive readMask
+
       const readMask = [
         "name",
         "title",
@@ -893,13 +842,11 @@ export class GoogleMyBusinessService {
     }
   }
 
-  // Check if user has access to a specific location
   async checkLocationAccess(
     locationId: string,
   ): Promise<{ hasAccess: boolean; accessType?: "direct" | "wildcard" }> {
     const cleanLocationId = locationId.replace("locations/", "")
 
-    // First try wildcard approach as it's most permissive
     try {
       const response = await this.makeRequest(
         `${GOOGLE_MY_BUSINESS_API}/accounts/-/locations/${cleanLocationId}?readMask=name`,
@@ -912,7 +859,6 @@ export class GoogleMyBusinessService {
       console.error("Error checking wildcard access:", error)
     }
 
-    // If wildcard fails, check if we have direct access through accounts
     const accounts = await this.getAccounts()
     for (const account of accounts) {
       try {

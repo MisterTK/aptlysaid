@@ -21,13 +21,11 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
       return json({ error: "Review ID is required" }, { status: 400 })
     }
 
-    // Create V2 API client
     const v2Client = await V2ApiClient.create(locals.supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Generate AI response using V2 workflow system
     const result = await v2Client.generateAiResponse(reviewId)
 
     return json({

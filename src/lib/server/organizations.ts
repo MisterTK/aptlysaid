@@ -4,9 +4,6 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../DatabaseDefinitions"
 import { UserManagementService, type UserRole } from "./user-management"
 
-/**
- * Enhanced tenant context with user role and permissions
- */
 export interface TenantContext {
   tenantId: string
   userId: string
@@ -20,14 +17,8 @@ export interface TenantContext {
   }
 }
 
-/**
- * @deprecated Use TenantContext instead
- */
 export type OrganizationContext = TenantContext
 
-/**
- * Get tenant ID from cookies
- */
 export async function getTenantId(
   locals: App.Locals,
   cookies: Cookies,
@@ -45,14 +36,8 @@ export async function getTenantId(
   return tenantId
 }
 
-/**
- * @deprecated Use getTenantId instead
- */
 export const getOrganizationId = getTenantId
 
-/**
- * Get comprehensive tenant context including user role and permissions
- */
 export async function getTenantContext(
   locals: App.Locals,
   cookies: Cookies,
@@ -94,14 +79,8 @@ export async function getTenantContext(
   }
 }
 
-/**
- * @deprecated Use getTenantContext instead
- */
 export const getOrganizationContext = getTenantContext
 
-/**
- * Get user permissions based on role
- */
 export function getUserPermissions(role: UserRole) {
   const permissions = {
     canManageTeam: false,
@@ -140,9 +119,6 @@ export function getUserPermissions(role: UserRole) {
   return permissions
 }
 
-/**
- * Get user's tenants (for multi-tenant support)
- */
 export async function getUserTenants(
   userId: string,
   supabase: SupabaseClient<Database>,
@@ -181,24 +157,15 @@ export async function getUserTenants(
   }))
 }
 
-/**
- * @deprecated Use getUserTenants instead
- */
 export const getUserOrganizations = getUserTenants
 
-/**
- * Set current tenant in cookies
- */
 export function setCurrentTenant(tenantId: string, cookies: Cookies): void {
   cookies.set("current_tenant_id", tenantId, {
     path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
   })
 }
 
-/**
- * @deprecated Use setCurrentTenant instead
- */
 export const setCurrentOrganization = setCurrentTenant

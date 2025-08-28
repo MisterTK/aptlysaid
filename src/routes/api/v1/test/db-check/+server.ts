@@ -5,8 +5,6 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
   try {
     const tenantId = cookies.get("current_tenant_id")
 
-    // Direct SQL query to bypass any ORM issues
-    // Check if RPC function exists, otherwise provide fallback
     const { data: sqlCheck, error: sqlError } = await locals.supabaseServiceRole
       .rpc("get_oauth_token_debug", { p_tenant_id: tenantId })
       .catch(() => ({
@@ -14,14 +12,12 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
         error: { message: "RPC function not available" },
       }))
 
-    // Check with minimal filters
     const { data: minimalCheck, error: minimalError } =
       await locals.supabaseServiceRole
         .from("oauth_tokens")
         .select("*")
         .eq("tenant_id", tenantId || "")
 
-    // Check with provider filter only
     const { data: providerCheck, error: providerError } =
       await locals.supabaseServiceRole
         .from("oauth_tokens")
@@ -29,7 +25,6 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
         .eq("tenant_id", tenantId || "")
         .eq("provider", "google")
 
-    // Check all statuses
     const { data: allStatuses, error: statusError } =
       await locals.supabaseServiceRole
         .from("oauth_tokens")

@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
   }
 
   try {
-    // Check database connection
+
     const { error: dbError } = await supabase
       .from("profiles")
       .select("count")
@@ -24,11 +24,9 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
 
     checks.checks.database = dbError ? "error" : "ok"
 
-    // Check auth service
     const { error: authError } = await supabase.auth.getSession()
     checks.checks.auth = authError ? "error" : "ok"
 
-    // Overall status
     const hasErrors = Object.values(checks.checks).some(
       (status) => status === "error",
     )

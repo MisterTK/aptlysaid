@@ -36,7 +36,6 @@ export const actions: Actions = {
     const writingStyle =
       (formData.get("writingStyle") as string) || "professional"
 
-    // Validate inputs
     const errors: FormErrors = {}
 
     if (!name || name.trim().length < 2) {
@@ -51,7 +50,6 @@ export const actions: Actions = {
       return fail(400, { errors })
     }
 
-    // Generate a unique slug based on name and timestamp
     const baseSlug = name
       .trim()
       .toLowerCase()
@@ -60,7 +58,6 @@ export const actions: Actions = {
     const timestamp = Date.now().toString(36)
     const slug = `${baseSlug}-${timestamp}`
 
-    // Parse employee count and annual revenue ranges
     const parseEmployeeRange = (range: string) => {
       switch (range) {
         case "1-10":
@@ -99,11 +96,9 @@ export const actions: Actions = {
       }
     }
 
-    // Calculate trial end date (14 days from now)
     const trialEndDate = new Date()
     trialEndDate.setDate(trialEndDate.getDate() + 14)
 
-    // Create tenant (organization) with V2 schema fields
     const tenantInsertData: Record<string, unknown> = {
       name: name.trim(),
       slug: slug.toLowerCase(),
@@ -112,7 +107,7 @@ export const actions: Actions = {
       business_type: businessType,
       timezone,
       trial_ends_at: trialEndDate.toISOString(),
-      // Default limits for trial plan
+
       locations_limit: 1,
       team_members_limit: 5,
       monthly_review_limit: 100,
@@ -156,13 +151,12 @@ export const actions: Actions = {
       })
     }
 
-    // Add user as owner of the tenant (V2 RBAC system)
     const { error: memberError } = await supabaseServiceRole
       .from("tenant_users")
       .insert({
         tenant_id: newTenant.id,
         user_id: user.id,
-        role: "owner", // V2 uses owner role for tenant creators
+        role: "owner",
         status: "active",
         joined_at: new Date().toISOString(),
         permissions: {
@@ -175,7 +169,7 @@ export const actions: Actions = {
 
     if (memberError) {
       console.error("Error adding tenant member:", memberError)
-      // Try to clean up the tenant
+
       await supabaseServiceRole.from("tenants").delete().eq("id", newTenant.id)
 
       return fail(500, {
@@ -183,7 +177,6 @@ export const actions: Actions = {
       })
     }
 
-    // Create initial business guidance for the tenant
     if (newTenant) {
       const businessGuidanceData: Record<string, unknown> = {
         tenant_id: newTenant.id,
@@ -216,10 +209,9 @@ export const actions: Actions = {
 
       if (guidanceError) {
         console.error("Error creating business guidance:", guidanceError)
-        // Don't fail the whole process, but log the error
+
       }
 
-      // Create initial AI model configuration
       const { error: aiConfigError } = await supabaseServiceRole
         .from("ai_model_config")
         .insert({
@@ -240,7 +232,6 @@ export const actions: Actions = {
       }
     }
 
-    // Set the tenant cookie
     cookies.set("current_tenant_id", newTenant.id, {
       path: "/",
       httpOnly: true,
@@ -248,7 +239,6 @@ export const actions: Actions = {
       secure: process.env.NODE_ENV === "production",
     })
 
-    // Redirect to dashboard
     redirect(303, "/account")
   },
 }

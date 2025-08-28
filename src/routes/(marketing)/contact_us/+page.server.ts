@@ -2,7 +2,6 @@ import { fail } from "@sveltejs/kit"
 import { sendContactFormEmail } from "$lib/mailer.js"
 import { env } from "$env/dynamic/private"
 
-/** @type {import('./$types').Actions} */
 export const actions = {
   submitContactUs: async ({ request, locals: { supabaseServiceRole } }) => {
     const formData = await request.formData()
@@ -52,7 +51,6 @@ export const actions = {
       return fail(400, { errors })
     }
 
-    // Save to database
     const { error: insertError } = await supabaseServiceRole
       .from("contact_requests")
       .insert({
@@ -70,7 +68,6 @@ export const actions = {
       return fail(500, { errors: { _: "Error saving" } })
     }
 
-    // Send email to admin
     await sendContactFormEmail(
       {
         name: `${firstName} ${lastName}`,

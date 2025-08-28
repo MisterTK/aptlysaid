@@ -2,7 +2,6 @@ import { error, json } from "@sveltejs/kit"
 import Stripe from "stripe"
 import type { RequestHandler } from "./$types"
 
-// Initialize Stripe with modern configuration - lazy load to avoid build-time dependencies
 let stripe: Stripe | null = null
 function getStripe() {
   if (!stripe) {
@@ -30,18 +29,16 @@ export const POST: RequestHandler = async ({
 }) => {
   const supabase = supabaseServiceRole
   try {
-    // Get webhook secret at runtime (it's optional in the environment)
+
     const webhookSecret =
       import.meta.env?.PRIVATE_STRIPE_WEBHOOK_SECRET ||
       process.env.PRIVATE_STRIPE_WEBHOOK_SECRET
 
-    // Validate webhook secret is configured
     if (!webhookSecret) {
       console.error("Stripe webhook secret not configured")
       error(500, "Webhook configuration error")
     }
 
-    // Get the raw body and signature
     const body = await request.text()
     const signature = request.headers.get("stripe-signature")
 
@@ -50,7 +47,6 @@ export const POST: RequestHandler = async ({
       error(400, "Missing signature")
     }
 
-    // Verify webhook signature
     let event: Stripe.Event
     try {
       event = getStripe().webhooks.constructEvent(
@@ -63,10 +59,8 @@ export const POST: RequestHandler = async ({
       error(400, `Webhook Error: ${err.message}`)
     }
 
-    // Log webhook event for debugging
     console.log(`Received webhook event: ${event.type} (${event.id})`)
 
-    // Handle different event types
     switch (event.type) {
       case "customer.subscription.created":
         await handleSubscriptionCreated(
@@ -125,12 +119,10 @@ export const POST: RequestHandler = async ({
         console.log(`Unhandled event type: ${event.type}`)
     }
 
-    // Return success response
     return json({ received: true, event_id: event.id })
   } catch (err) {
     console.error("Webhook processing error:", err)
 
-    // Return appropriate error response
     if (err.status) {
       error(err.status, err.body || "Webhook processing failed")
     }
@@ -139,7 +131,6 @@ export const POST: RequestHandler = async ({
   }
 }
 
-// Event handlers
 async function handleSubscriptionCreated(
   subscription: Stripe.Subscription,
   supabase: unknown,
@@ -147,7 +138,7 @@ async function handleSubscriptionCreated(
   console.log(`Subscription created: ${subscription.id}`)
 
   try {
-    // Find user by customer ID
+
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -159,7 +150,6 @@ async function handleSubscriptionCreated(
       return
     }
 
-    // Log subscription creation
     await logWebhookEvent({
       event_type: "subscription.created",
       user_id: customer.id,
@@ -185,7 +175,7 @@ async function handleSubscriptionUpdated(
   console.log(`Subscription updated: ${subscription.id}`)
 
   try {
-    // Find user by customer ID
+
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -197,7 +187,6 @@ async function handleSubscriptionUpdated(
       return
     }
 
-    // Log subscription update
     await logWebhookEvent({
       event_type: "subscription.updated",
       user_id: customer.id,
@@ -211,13 +200,12 @@ async function handleSubscriptionUpdated(
       },
     })
 
-    // Handle specific status changes
     if (subscription.status === "canceled") {
       console.log(`Subscription canceled for user: ${customer.id}`)
-      // Could trigger email notification here
+
     } else if (subscription.status === "past_due") {
       console.log(`Subscription past due for user: ${customer.id}`)
-      // Could trigger dunning management here
+
     }
   } catch (error) {
     console.error("Error handling subscription updated:", error)
@@ -231,7 +219,7 @@ async function handleSubscriptionDeleted(
   console.log(`Subscription deleted: ${subscription.id}`)
 
   try {
-    // Find user by customer ID
+
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -243,7 +231,6 @@ async function handleSubscriptionDeleted(
       return
     }
 
-    // Log subscription deletion
     await logWebhookEvent({
       event_type: "subscription.deleted",
       user_id: customer.id,
@@ -266,17 +253,16 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
   try {
     if (invoice.billing_reason === "subscription_create") {
-      // First payment for a new subscription
+
       console.log("First payment completed for new subscription")
     } else if (invoice.billing_reason === "subscription_cycle") {
-      // Recurring payment
+
       console.log("Recurring payment completed")
     }
 
-    // Log successful payment
     await logWebhookEvent({
       event_type: "invoice.payment_succeeded",
-      user_id: null, // Could fetch from customer ID if needed
+      user_id: null,
       stripe_customer_id: invoice.customer as string,
       subscription_id: invoice.subscription as string,
       metadata: {
@@ -297,14 +283,13 @@ async function handleInvoicePaymentFailed(
   console.log(`Invoice payment failed: ${invoice.id}`)
 
   try {
-    // Find user by customer ID for notifications
+
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
       .eq("stripe_customer_id", invoice.customer as string)
       .single()
 
-    // Log failed payment
     await logWebhookEvent({
       event_type: "invoice.payment_failed",
       user_id: customer?.id || null,
@@ -320,7 +305,7 @@ async function handleInvoicePaymentFailed(
 
     if (customer) {
       console.log(`Payment failed for user: ${customer.id}`)
-      // Could trigger email notification here
+
     }
   } catch (error) {
     console.error("Error handling invoice payment failed:", error)
@@ -334,7 +319,7 @@ async function handleTrialWillEnd(
   console.log(`Trial will end: ${subscription.id}`)
 
   try {
-    // Find user by customer ID
+
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -346,7 +331,6 @@ async function handleTrialWillEnd(
       return
     }
 
-    // Log trial ending
     await logWebhookEvent({
       event_type: "subscription.trial_will_end",
       user_id: customer.id,
@@ -358,7 +342,7 @@ async function handleTrialWillEnd(
     })
 
     console.log(`Trial ending soon for user: ${customer.id}`)
-    // Could trigger trial ending notification here
+
   } catch (error) {
     console.error("Error handling trial will end:", error)
   }
@@ -370,7 +354,7 @@ async function handleCheckoutSessionCompleted(
   console.log(`Checkout session completed: ${session.id}`)
 
   try {
-    // Log checkout completion
+
     await logWebhookEvent({
       event_type: "checkout.session.completed",
       user_id: session.metadata?.user_id || null,
@@ -396,7 +380,7 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
   console.log(`Customer created: ${customer.id}`)
 
   try {
-    // Log customer creation
+
     await logWebhookEvent({
       event_type: "customer.created",
       user_id: customer.metadata?.user_id || null,
@@ -416,7 +400,7 @@ async function handleCustomerUpdated(customer: Stripe.Customer) {
   console.log(`Customer updated: ${customer.id}`)
 
   try {
-    // Log customer update
+
     await logWebhookEvent({
       event_type: "customer.updated",
       user_id: customer.metadata?.user_id || null,
@@ -432,7 +416,6 @@ async function handleCustomerUpdated(customer: Stripe.Customer) {
   }
 }
 
-// Utility function to log webhook events for debugging and audit
 async function logWebhookEvent({
   event_type,
   user_id,
@@ -447,8 +430,7 @@ async function logWebhookEvent({
   metadata: Record<string, unknown>
 }) {
   try {
-    // Note: You might want to create a dedicated table for webhook events
-    // For now, this is just logging to console, but you could store in database
+
     console.log("Webhook Event:", {
       event_type,
       user_id,
@@ -458,19 +440,6 @@ async function logWebhookEvent({
       timestamp: new Date().toISOString(),
     })
 
-    // Example: Store in a webhook_events table (uncomment if you create the table)
-    /*
-    await supabase
-      .from("webhook_events")
-      .insert({
-        event_type,
-        user_id,
-        stripe_customer_id,
-        subscription_id,
-        metadata,
-        processed_at: new Date().toISOString()
-      })
-    */
   } catch (error) {
     console.error("Error logging webhook event:", error)
   }

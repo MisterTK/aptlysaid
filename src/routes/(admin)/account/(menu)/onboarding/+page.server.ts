@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   }
 
   try {
-    // Check if user has an active onboarding workflow
+
     const { data: workflowExecution } = await supabase
       .from("workflow_executions")
       .select("*")
@@ -28,7 +28,6 @@ export const load: PageServerLoad = async ({ locals }) => {
       .limit(1)
       .single()
 
-    // Get onboarding progress status
     const onboardingStatus = await getOnboardingStatus(
       supabase,
       organization.id,
@@ -56,21 +55,20 @@ async function getOnboardingStatus(
   organizationId: string,
 ) {
   try {
-    // Check various completion states
+
     const [
       { data: profile },
       { data: tokens },
       { data: locations },
       { data: guidance },
     ] = await Promise.all([
-      // Profile completion check
+
       supabase
         .from("profiles")
         .select("first_name, last_name, company_name")
         .eq("organization_id", organizationId)
         .single(),
 
-      // Integration connection check
       supabase
         .from("oauth_tokens")
         .select("id")
@@ -79,14 +77,12 @@ async function getOnboardingStatus(
         .eq("status", "active")
         .limit(1),
 
-      // Locations discovery check
       supabase
         .from("locations")
         .select("id")
         .eq("organization_id", organizationId)
         .limit(1),
 
-      // AI configuration check
       supabase
         .from("business_guidance")
         .select("id")
@@ -95,7 +91,7 @@ async function getOnboardingStatus(
     ])
 
     return {
-      welcome_completed: true, // Always true once they reach onboarding page
+      welcome_completed: true,
       profile_completed: !!(profile?.first_name && profile?.last_name),
       integrations_connected: !!(tokens && tokens.length > 0),
       locations_discovered: !!(locations && locations.length > 0),

@@ -1,13 +1,10 @@
 import type { RequestHandler } from "./$types"
 
-// Proxy handler for backward compatibility during migration
-// Redirects old /account/api/* routes to new /api/v1/* routes
 export const GET: RequestHandler = async ({ url, fetch, request }) => {
   const path = url.pathname.replace("/account/api/", "/api/v1/")
   const newUrl = new URL(path, url.origin)
   newUrl.search = url.search
 
-  // Forward cookies and auth context
   const headers = new Headers(request.headers)
   headers.set("cookie", request.headers.get("cookie") || "")
 
@@ -22,10 +19,8 @@ export const POST: RequestHandler = async ({ url, fetch, request }) => {
   const newUrl = new URL(path, url.origin)
   newUrl.search = url.search
 
-  // Clone the request to preserve the body stream
   const clonedRequest = request.clone()
 
-  // Forward cookies and auth context
   const headers = new Headers(request.headers)
   headers.set("cookie", request.headers.get("cookie") || "")
   headers.set(
@@ -46,10 +41,8 @@ export const PUT: RequestHandler = async ({ url, fetch, request }) => {
   const newUrl = new URL(path, url.origin)
   newUrl.search = url.search
 
-  // Clone the request to preserve the body stream
   const clonedRequest = request.clone()
 
-  // Forward cookies and auth context
   const headers = new Headers(request.headers)
   headers.set("cookie", request.headers.get("cookie") || "")
   headers.set(
@@ -70,10 +63,8 @@ export const PATCH: RequestHandler = async ({ url, fetch, request }) => {
   const newUrl = new URL(path, url.origin)
   newUrl.search = url.search
 
-  // Clone the request to preserve the body stream
   const clonedRequest = request.clone()
 
-  // Forward cookies and auth context
   const headers = new Headers(request.headers)
   headers.set("cookie", request.headers.get("cookie") || "")
   headers.set(
@@ -94,7 +85,6 @@ export const DELETE: RequestHandler = async ({ url, fetch, request }) => {
   const newUrl = new URL(path, url.origin)
   newUrl.search = url.search
 
-  // Forward cookies and auth context
   const headers = new Headers(request.headers)
   headers.set("cookie", request.headers.get("cookie") || "")
 

@@ -17,19 +17,16 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Get team members
     const { members } = await v2Client.getTeamMembers()
 
-    // Get invitations
     const { invitations } = await v2Client.getInvitations()
 
-    // Check current user's role
     const currentUserMember = members.find(
       (member) => member.user_id === user.id,
     )
@@ -49,7 +46,6 @@ export const GET: RequestHandler = async ({
       )
     }
 
-    // Format team members for frontend
     const teamMembers = members.map((member) => ({
       user_id: member.user_id,
       email:
@@ -60,13 +56,12 @@ export const GET: RequestHandler = async ({
       avatar_url: member.user?.avatar_url || null,
     }))
 
-    // Format invitations for frontend
     const pendingInvitations = invitations.map((invitation) => ({
       id: invitation.id,
       email: invitation.email,
       role: invitation.role,
       invited_by: invitation.invited_by,
-      invited_by_name: null, // Could be enhanced with user lookup
+      invited_by_name: null,
       created_at: invitation.created_at,
       expires_at: invitation.expires_at,
       status: "pending",
@@ -99,7 +94,6 @@ export const GET: RequestHandler = async ({
   }
 }
 
-// POST endpoint for inviting team members
 export const POST: RequestHandler = async ({
   request,
   locals: { safeGetSession, supabase },
@@ -122,12 +116,10 @@ export const POST: RequestHandler = async ({
       return json({ error: "Email and role are required" }, { status: 400 })
     }
 
-    // Validate role
     if (!["owner", "admin", "member", "viewer"].includes(role)) {
       return json({ error: "Invalid role" }, { status: 400 })
     }
 
-    // Create v2 API client
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })

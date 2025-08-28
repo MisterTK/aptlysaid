@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-    // Get queued responses
+
     const { data: queueItems, error } = await supabaseServiceRole
       .from("response_queue")
       .select(
@@ -40,7 +40,6 @@ export const GET: RequestHandler = async ({
 
     if (error) throw error
 
-    // Transform to match expected format
     const items =
       queueItems?.map((item) => ({
         id: item.id,
@@ -83,7 +82,6 @@ export const POST: RequestHandler = async ({
   try {
     const { aiResponseId } = await request.json()
 
-    // Get the AI response with location_id from the review
     const { data: aiResponse, error: aiError } = await supabaseServiceRole
       .from("ai_responses")
       .select(
@@ -100,7 +98,6 @@ export const POST: RequestHandler = async ({
       throw new Error("AI response not found")
     }
 
-    // Check if already in queue
     const { data: existingQueue } = await supabaseServiceRole
       .from("response_queue")
       .select("id")
@@ -112,7 +109,6 @@ export const POST: RequestHandler = async ({
       return json({ message: "Already in queue" })
     }
 
-    // Get next priority (higher numbers = higher priority)
     const { data: highestItem } = await supabaseServiceRole
       .from("response_queue")
       .select("priority")
@@ -123,7 +119,6 @@ export const POST: RequestHandler = async ({
 
     const nextPriority = (highestItem?.priority || 0) + 1
 
-    // Calculate scheduled time based on settings
     const { data: settings } = await supabaseServiceRole
       .from("response_settings")
       .select("*")
@@ -133,7 +128,6 @@ export const POST: RequestHandler = async ({
     const delaySeconds = settings?.response_delay || 30
     const scheduledFor = new Date(Date.now() + delaySeconds * 1000)
 
-    // Add to queue with location_id
     const { data: newItem, error: insertError } = await supabaseServiceRole
       .from("response_queue")
       .insert({
@@ -177,7 +171,7 @@ export const PATCH: RequestHandler = async ({
     const { action } = await request.json()
 
     if (action === "pause") {
-      // Update all pending items to cancelled status (paused doesn't exist in schema)
+
       const { error } = await supabaseServiceRole
         .from("response_queue")
         .update({ status: "cancelled" })
@@ -187,7 +181,7 @@ export const PATCH: RequestHandler = async ({
       if (error) throw error
       return json({ success: true })
     } else if (action === "resume") {
-      // Update all cancelled items back to pending
+
       const { error } = await supabaseServiceRole
         .from("response_queue")
         .update({ status: "pending" })

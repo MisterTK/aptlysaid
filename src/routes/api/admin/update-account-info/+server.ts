@@ -22,7 +22,6 @@ export const POST: RequestHandler = async ({
   const body = await request.json()
   const { adminSecret } = body
 
-  // Simple admin protection - in production, use proper authentication
   if (adminSecret !== "update-account-info-2025") {
     return error(401, "Unauthorized")
   }
@@ -31,7 +30,6 @@ export const POST: RequestHandler = async ({
     return error(500, "Service role client not available")
   }
 
-  // Get all organizations with oauth_tokens but missing account_id
   const { data: tokensToUpdate, error: selectError } = await supabaseServiceRole
     .from("oauth_tokens")
     .select("tenant_id, encrypted_access_token, encrypted_refresh_token")
@@ -69,8 +67,6 @@ export const POST: RequestHandler = async ({
     try {
       console.log(`Processing organization: ${tokenData.tenant_id}`)
 
-      // Skip decryption for now since existing tokens can't be decrypted
-      // Instead, we'll use the GMB service to get a fresh token
       console.log(`Getting fresh token for organization ${tokenData.tenant_id}`)
 
       const service = await gmb.createService(tokenData.tenant_id)
@@ -81,10 +77,9 @@ export const POST: RequestHandler = async ({
         continue
       }
 
-      // Get a fresh access token by trying a simple API call
       let freshAccessToken: string
       try {
-        // This will refresh the token if needed and return the fresh one
+
         await service.getAccounts()
         const freshTokens = await gmb.getTokens(tokenData.tenant_id)
         if (!freshTokens) {
@@ -102,7 +97,6 @@ export const POST: RequestHandler = async ({
         continue
       }
 
-      // Try to fetch accounts using Google My Business Account Management API
       const accountsUrl =
         "https://mybusinessaccountmanagement.googleapis.com/v1/accounts"
       const accountsResponse = await fetch(accountsUrl, {
@@ -123,12 +117,12 @@ export const POST: RequestHandler = async ({
         )
 
         if (accountsData.accounts && accountsData.accounts.length > 0) {
-          // User has account-level access
+
           accountId = accountsData.accounts[0].name.replace("accounts/", "")
           accessLevel = "account"
           console.log(`Account-level access detected. Account ID: ${accountId}`)
         } else {
-          // User might have location-level access only
+
           accessLevel = "location"
           console.log("No accounts found - likely location-level access only")
         }
@@ -138,7 +132,7 @@ export const POST: RequestHandler = async ({
         )
 
         if (accountsResponse.status === 403) {
-          // Forbidden - likely location-level access only
+
           accessLevel = "location"
           console.log("403 Forbidden - confirmed location-level access only")
         } else {
@@ -150,7 +144,6 @@ export const POST: RequestHandler = async ({
         }
       }
 
-      // Update the oauth_tokens table with account info
       const { error: updateError } = await supabaseServiceRole
         .from("oauth_tokens")
         .update({
@@ -186,7 +179,6 @@ export const POST: RequestHandler = async ({
         })
       }
 
-      // Add a small delay to avoid hitting rate limits
       await new Promise((resolve) => setTimeout(resolve, 500))
     } catch (error) {
       console.error(

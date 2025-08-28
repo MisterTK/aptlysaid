@@ -5,14 +5,12 @@ export const blogInfo = {
 
 export type BlogPost = {
   link: string
-  date: string // date is a string 'YYYY-MM-DD'
+  date: string
   title: string
   description: string
-  parsedDate?: Date // Optional because it's added dynamically
+  parsedDate?: Date
 }
 
-// Update this list with the actual blog post list
-// Create a page in the "(posts)" directory for each entry
 const blogPosts: BlogPost[] = [
   {
     title: "5 Ways AI is Revolutionizing Review Management",
@@ -37,7 +35,6 @@ const blogPosts: BlogPost[] = [
   },
 ]
 
-// Parse post dates from strings to Date objects
 for (const post of blogPosts) {
   if (!post.parsedDate) {
     const dateParts = post.date.split("-")
@@ -45,7 +42,7 @@ for (const post of blogPosts) {
       parseInt(dateParts[0]),
       parseInt(dateParts[1]) - 1,
       parseInt(dateParts[2]),
-    ) // Note: months are 0-based
+    )
   }
 }
 

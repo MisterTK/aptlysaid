@@ -14,10 +14,9 @@ export interface VertexAIConfig {
 }
 
 export function createVertexAI(config: VertexAIConfig = {}) {
-  // Setup credentials if running in Vercel
+
   const credentials = setupGoogleCloudCredentials()
 
-  // Build auth options
   let googleAuthOptions = config.googleAuthOptions
   if (!googleAuthOptions && credentials) {
     googleAuthOptions = {
@@ -28,7 +27,6 @@ export function createVertexAI(config: VertexAIConfig = {}) {
     }
   }
 
-  // Get project ID from config, env, or credentials
   const projectId =
     config.projectId ||
     process.env.GOOGLE_CLOUD_PROJECT ||
@@ -50,7 +48,6 @@ export function createVertexAI(config: VertexAIConfig = {}) {
 
 export const DEFAULT_LOCATION = "us-central1"
 
-// Re-export from models-config for backward compatibility
 export {
   DEFAULT_MODEL,
   VERTEX_AI_MODELS,

@@ -31,7 +31,7 @@ interface BusinessAccount {
 
 interface Review {
   reviewId?: string
-  name?: string // Google's resource name format (e.g., accounts/123/locations/456/reviews/789)
+  name?: string
   reviewer: {
     displayName: string
     profilePhotoUrl?: string
@@ -91,10 +91,9 @@ export class GoogleMyBusinessServiceAlt {
     })
 
     if (response.status === 401) {
-      // Token expired, try to refresh
+
       await this.refreshAccessToken()
 
-      // Retry the request with new token
       return fetch(url, {
         ...options,
         headers: {
@@ -156,7 +155,7 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getLocations(accountId: string): Promise<BusinessLocation[]> {
-    // Remove 'accounts/' prefix if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
 
     const response = await this.makeRequest(
@@ -173,11 +172,10 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getLocationsForAccount(accountId: string): Promise<BusinessLocation[]> {
-    // This method maintains backward compatibility
+
     return this.getLocations(accountId)
   }
 
-  // Get ALL locations the user has access to using wildcard account
   async getAllLocationsWithWildcard(): Promise<BusinessLocation[]> {
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/accounts/-/locations?readMask=name,title`,
@@ -194,12 +192,11 @@ export class GoogleMyBusinessServiceAlt {
     const data = (await response.json()) as { locations?: BusinessLocation[] }
     const locations = data.locations || []
 
-    // Process locations to ensure they have the expected structure
     return locations.map((location: BusinessLocation) => ({
       name: location.name,
       locationId: location.name.split("/").pop() || "",
       title: location.title,
-      // These fields won't be available with the limited readMask, but we keep them for compatibility
+
       address: location.address,
       primaryPhone: location.primaryPhone,
       websiteUrl: location.websiteUrl,
@@ -207,8 +204,7 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getInvitations(): Promise<Invitation[]> {
-    // The invitations endpoint requires listing through each account
-    // We need to get all accounts first, then check invitations for each
+
     const allInvitations: Invitation[] = []
 
     try {
@@ -229,7 +225,7 @@ export class GoogleMyBusinessServiceAlt {
               allInvitations.push(...data.invitations)
             }
           } else {
-            // Log but don't fail completely if one account fails
+
             console.error(
               `Failed to fetch invitations for account ${accountName}:`,
               await response.text(),
@@ -267,11 +263,9 @@ export class GoogleMyBusinessServiceAlt {
     return true
   }
 
-  // Get all locations the user has access to (including those without account access)
   async getAllAccessibleLocations(): Promise<BusinessLocation[]> {
     try {
-      // Use the wildcard account approach to get ALL locations at once
-      // This includes both account-owned locations AND directly shared locations
+
       const wildcardLocations = await this.getAllLocationsWithWildcard()
 
       if (wildcardLocations.length > 0) {
@@ -281,7 +275,6 @@ export class GoogleMyBusinessServiceAlt {
         return wildcardLocations
       }
 
-      // Fallback to the old approach if wildcard fails or returns no results
       console.log(
         "Wildcard approach returned no locations, falling back to account-based approach",
       )
@@ -295,14 +288,12 @@ export class GoogleMyBusinessServiceAlt {
     }
   }
 
-  // Legacy method that iterates through accounts - kept as fallback
   private async getAllAccessibleLocationsViaAccounts(): Promise<
     BusinessLocation[]
   > {
     const allLocations: BusinessLocation[] = []
-    const locationIds = new Set<string>() // Track unique locations
+    const locationIds = new Set<string>()
 
-    // Get all locations from accounts we own or have access to
     const accounts = await this.getAccounts()
     for (const account of accounts) {
       try {
@@ -323,7 +314,6 @@ export class GoogleMyBusinessServiceAlt {
       }
     }
 
-    // Check for any pending invitations that might give us access to additional locations
     const invitations = await this.getInvitations()
     if (invitations.length > 0) {
       console.log("Found pending invitations:", invitations)
@@ -333,7 +323,7 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getReviews(accountId: string, locationId: string): Promise<Review[]> {
-    // Remove prefixes if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
 
@@ -350,9 +340,8 @@ export class GoogleMyBusinessServiceAlt {
     return data.reviews || []
   }
 
-  // Get reviews using the full location name (e.g., "accounts/123/locations/456")
   async getReviewsByLocationName(locationName: string): Promise<Review[]> {
-    // The location name should be in the format "accounts/123/locations/456"
+
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/${locationName}/reviews`,
     )
@@ -368,7 +357,6 @@ export class GoogleMyBusinessServiceAlt {
     const data = (await response.json()) as { reviews?: Review[] }
     const reviews = data.reviews || []
 
-    // Add the location name to each review for context
     return reviews.map((review: Review) => ({
       ...review,
       locationName,
@@ -381,7 +369,7 @@ export class GoogleMyBusinessServiceAlt {
     reviewId: string,
     comment: string,
   ): Promise<boolean> {
-    // Remove prefixes if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
@@ -402,7 +390,6 @@ export class GoogleMyBusinessServiceAlt {
     return true
   }
 
-  // Reply to a review using the full review name (e.g., "accounts/123/locations/456/reviews/789")
   async replyToReviewByName(
     reviewName: string,
     comment: string,
@@ -428,7 +415,7 @@ export class GoogleMyBusinessServiceAlt {
     locationId: string,
     reviewId: string,
   ): Promise<boolean> {
-    // Remove prefixes if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
@@ -448,7 +435,6 @@ export class GoogleMyBusinessServiceAlt {
     return true
   }
 
-  // Delete a review reply using the full review name (e.g., "accounts/123/locations/456/reviews/789")
   async deleteReviewReplyByName(reviewName: string): Promise<boolean> {
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/${reviewName}/reply`,
@@ -469,7 +455,7 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getBusinessInfo(accountId: string, locationId: string) {
-    // Remove prefixes if present
+
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
 
@@ -485,7 +471,6 @@ export class GoogleMyBusinessServiceAlt {
     return await response.json()
   }
 
-  // Get business info using the full location name (e.g., "accounts/123/locations/456")
   async getBusinessInfoByLocationName(locationName: string) {
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/${locationName}?readMask=name,title,phoneNumbers,websiteUri,regularHours,specialHours`,
@@ -502,7 +487,6 @@ export class GoogleMyBusinessServiceAlt {
     return await response.json()
   }
 
-  // Get all reviews for all accessible locations
   async getAllReviews(): Promise<
     { location: BusinessLocation; reviews: Review[] }[]
   > {

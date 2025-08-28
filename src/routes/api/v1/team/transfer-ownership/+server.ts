@@ -8,7 +8,6 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
     const supabase = locals.supabase
     const tenantContext = await getTenantContext(locals, cookies, supabase)
 
-    // Only owners can transfer ownership
     if (tenantContext.userRole !== "owner") {
       throw error(403, "Only the current owner can transfer ownership")
     }

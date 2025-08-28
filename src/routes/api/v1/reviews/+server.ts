@@ -20,16 +20,14 @@ export const GET: RequestHandler = async ({
   const locationId = url.searchParams.get("locationId")
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Fetch reviews from v2 API
     const { reviews } = await v2Client.getReviews(locationId || undefined)
 
-    // Transform v2 reviews to match existing frontend format
     const transformedReviews = reviews.map((review) => ({
       reviewId: review.platform_review_id,
       name: review.platform_review_id,
@@ -49,7 +47,7 @@ export const GET: RequestHandler = async ({
         : null,
       createTime: review.reviewed_at,
       updateTime: review.updated_at,
-      // Include v2 specific fields for frontend use
+
       _v2: {
         id: review.id,
         response_status: review.response_status,
@@ -92,7 +90,7 @@ export const POST: RequestHandler = async ({
   }
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
@@ -102,7 +100,7 @@ export const POST: RequestHandler = async ({
 
     switch (action) {
       case "generate":
-        // Generate AI response
+
         result = await v2Client.generateAiResponse(reviewId)
         break
 

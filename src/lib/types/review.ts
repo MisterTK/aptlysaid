@@ -1,16 +1,14 @@
 export interface Review {
-  id: string // Unique ID from the reviews table
+  id: string
   platform_review_id: string
   platform: string
   location_id: string
   tenant_id: string
 
-  // Reviewer Details
   reviewer_name: string | null
   reviewer_avatar_url: string | null
   reviewer_is_anonymous: boolean | null
 
-  // Review Content
   rating: number
   review_text: string | null
   review_date: string
@@ -18,20 +16,17 @@ export interface Review {
   is_review_edited: boolean | null
   review_url: string | null
 
-  // Response Details
   has_owner_reply: boolean | null
   owner_reply_text: string | null
   owner_reply_date: string | null
   external_response_date: string | null
   response_source: "ai" | "owner_external" | "manual" | null
 
-  // AI & System Fields
   status: string | null
   sentiment_label: string | null
   sentiment_score: number | null
   priority_score: number | null
 
-  // Relational data that might be joined
   ai_responses?: AIResponse[]
   locations?: { name: string; address: string | null }
 }
@@ -57,19 +52,17 @@ export interface AIResponse {
   rejection_reason?: string | null
   rejection_feedback?: string | null
 
-  // AI Generation metadata
   ai_model: string
   confidence_score?: number | null
   quality_score?: number | null
 
-  // Queue relationship
   response_queue?: ResponseQueueItem[] | null
 }
 
 export interface ResponseQueueItem {
   id: string
   tenant_id: string
-  response_id: string // Changed from ai_response_id to match schema
+  response_id: string
   location_id: string
   status: "pending" | "processing" | "published" | "failed" | "cancelled"
   priority: number | null

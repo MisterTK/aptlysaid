@@ -1,4 +1,4 @@
-// src/routes/auth/callback/+server.js
+
 import { redirect } from "@sveltejs/kit"
 import { isAuthApiError } from "@supabase/supabase-js"
 import { UserManagementService } from "$lib/server/user-management"
@@ -10,7 +10,6 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
   const error_description = url.searchParams.get("error_description")
   const invitationToken = url.searchParams.get("invitation")
 
-  // Handle auth errors
   if (error) {
     console.error("Auth error:", error, error_description)
     const redirectUrl = invitationToken
@@ -25,7 +24,6 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
         data: { user },
       } = await supabase.auth.exchangeCodeForSession(code)
 
-      // If there's an invitation token, process it automatically
       if (invitationToken && user) {
         try {
           console.log(
@@ -36,7 +34,6 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
           )
           const userMgmt = new UserManagementService(supabase)
 
-          // First check if invitation was already processed
           const { data: invitation } = await supabase
             .from("tenant_invitations")
             .select("status, tenant_id")
@@ -50,7 +47,7 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
             setCurrentTenant(invitation.tenant_id, cookies)
             redirect(303, "/account?invited=true")
           } else {
-            // Process new invitation
+
             const tenantId = await userMgmt.acceptInvitation(
               invitationToken,
               user.id,
@@ -63,13 +60,12 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
           }
         } catch (invitationError) {
           console.error("Error processing invitation:", invitationError)
-          // If invitation processing fails, redirect back to invitation page
+
           redirect(303, `/invitation/${invitationToken}?error=processing`)
         }
       }
     } catch (error) {
-      // If you open in another browser, need to redirect to login.
-      // Should not display error
+
       if (isAuthApiError(error)) {
         const redirectUrl = invitationToken
           ? `/login/sign_in?invitation=${invitationToken}&verified=true`

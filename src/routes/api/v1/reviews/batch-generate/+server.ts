@@ -19,21 +19,19 @@ export const POST: RequestHandler = async ({
 
   const { reviewIds } = await request.json()
 
-  // If no specific review IDs provided, get all reviews needing responses
   let targetReviewIds = reviewIds
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
     if (!targetReviewIds || targetReviewIds.length === 0) {
-      // Get all reviews that need AI responses
+
       const { reviews } = await v2Client.getReviews()
 
-      // Filter reviews needing responses
       targetReviewIds = reviews
         .filter(
           (review) =>
@@ -47,7 +45,6 @@ export const POST: RequestHandler = async ({
       }
     }
 
-    // Start batch generation
     const { workflowIds } =
       await v2Client.batchGenerateResponses(targetReviewIds)
 

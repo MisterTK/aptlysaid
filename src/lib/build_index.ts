@@ -23,7 +23,6 @@ interface SearchIndexData {
 export async function buildSearchIndex(): Promise<SearchIndexData> {
   const indexData: SearchIndexItem[] = []
 
-  // iterate all files with html extension in ./svelte-kit/output/prerendered/pages
   const fileRoot = path.resolve(".")
   const pagesPath = path.join(fileRoot, ".svelte-kit/output/prerendered/pages")
 
@@ -35,11 +34,11 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
   console.warn("Building search index...")
 
   for (const filePath of filteredFiles) {
-    // get html
+
     const html = fs.readFileSync(filePath, "utf-8")
-    // get text
+
     const body = convert(html)
-    // parse meta tags
+
     const dom = new JSDOM.JSDOM(html)
     const document = dom.window.document
     const title =
@@ -51,12 +50,10 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
         .querySelector('meta[name="description"]')
         ?.getAttribute("content") || ""
 
-    // derive path from file path
     const relativePath = path.relative(pagesPath, filePath)
     const urlPath =
       "/" + relativePath.replace("/index.html", "").replace(".html", "")
 
-    // make sure the path ends with a trailing slash
     const finalPath =
       urlPath === "/" ? "/" : urlPath.endsWith("/") ? urlPath : urlPath + "/"
 
@@ -70,7 +67,7 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
     indexData.push(indexEntry)
 
     if (indexData.length < 20) {
-      // console.log('Index entry:', indexEntry);
+
     }
   }
 
@@ -84,7 +81,6 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
   return data
 }
 
-// Build search index into the output directory, for use in the build process (see vite.config.js)
 export async function buildAndCacheSearchIndex(): Promise<void> {
   const data = await buildSearchIndex()
 

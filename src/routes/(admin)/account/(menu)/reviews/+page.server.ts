@@ -68,14 +68,12 @@ export const load: PageServerLoad = async ({
 
   const allAiResponses = dbReviews?.flatMap((r) => r.ai_responses) || []
 
-  // Debug logging
   console.log("Sample DB Review:", JSON.stringify(dbReviews?.[0], null, 2))
   console.log(
     "Sample AI Response:",
     JSON.stringify(allAiResponses?.[0], null, 2),
   )
 
-  // Also get queue items separately for debugging
   const { data: queueDebug } = await supabaseServiceRole
     .from("response_queue")
     .select("*, ai_responses(id, status)")
@@ -141,6 +139,6 @@ export const load: PageServerLoad = async ({
     tenantId: orgId,
     session,
     allAiResponses,
-    orphanedAiResponses: [], // This can be improved if needed
+    orphanedAiResponses: [],
   }
 }

@@ -15,14 +15,12 @@ export const load: PageServerLoad = async ({
     redirect(303, "/account")
   }
 
-  // Load business guidance directly from database
   const { data: guidance } = await supabaseServiceRole
     .from("business_guidance")
     .select("*")
     .eq("tenant_id", orgId)
     .single()
 
-  // Load upsell items directly from database
   const { data: items } = await supabaseServiceRole
     .from("upsell_items")
     .select("*")
@@ -60,7 +58,6 @@ export const actions: Actions = {
         formData.get("maxResponseLength")?.toString() || "500",
       )
 
-      // Parse the guidance structure to extract components for V2 schema
       let brandVoice = ""
       let keyMessaging: string[] = []
       let prohibitedWords: string[] = []
@@ -71,18 +68,16 @@ export const actions: Actions = {
         keyMessaging = parsed.responseGuidelines || []
         prohibitedWords = parsed.thingsToAvoid || []
       } catch {
-        // If parsing fails, treat as legacy plain text
+
         brandVoice = guidanceText
       }
 
-      // Prepare response_tone as JSONB for V2 schema
       const responseTone = {
         neutral: tone,
         positive: tone,
         negative: tone === "professional" ? "empathetic" : tone,
       }
 
-      // Check if business guidance already exists for this tenant
       const { data: existingGuidance, error: checkError } =
         await supabaseServiceRole
           .from("business_guidance")
@@ -97,7 +92,7 @@ export const actions: Actions = {
       let data, error
 
       if (existingGuidance) {
-        // Update existing record
+
         const updateData = {
           brand_voice: brandVoice,
           key_messaging: keyMessaging,
@@ -117,7 +112,7 @@ export const actions: Actions = {
         data = result.data
         error = result.error
       } else {
-        // Create new record
+
         const insertData = {
           tenant_id: orgId,
           brand_voice: brandVoice,
@@ -181,8 +176,8 @@ export const actions: Actions = {
           description,
           priority,
           is_active: isActive,
-          promotion_text: description || name, // Required field
-          call_to_action: "Learn more", // Required field with default
+          promotion_text: description || name,
+          call_to_action: "Learn more",
         })
         .select()
         .single()
@@ -222,15 +217,14 @@ export const actions: Actions = {
       const priority = formData.get("priority")?.toString()
       const isActive = formData.get("isActive")?.toString()
 
-      // Convert frontend fields to database fields including required fields
       const dbUpdates: Record<string, unknown> = {}
       if (name !== undefined) {
         dbUpdates.name = name
-        dbUpdates.promotion_text = name // Update required field
+        dbUpdates.promotion_text = name
       }
       if (description !== undefined) {
         dbUpdates.description = description
-        // Update promotion_text if description is provided, otherwise keep name
+
         if (description) {
           dbUpdates.promotion_text = description
         }
@@ -238,9 +232,8 @@ export const actions: Actions = {
       if (priority !== undefined) dbUpdates.priority = parseInt(priority)
       if (isActive !== undefined) dbUpdates.is_active = isActive === "true"
 
-      // Ensure call_to_action is always provided in updates
       if (!dbUpdates.call_to_action) {
-        dbUpdates.call_to_action = "Learn more" // Default value
+        dbUpdates.call_to_action = "Learn more"
       }
 
       const { data, error } = await supabaseServiceRole

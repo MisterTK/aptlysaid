@@ -10,10 +10,8 @@ import type { Database } from "../DatabaseDefinitions"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Type aliases for clarity
 type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 
-// Email template types
 interface EmailTemplate {
   subject: string
   html?: string
@@ -25,7 +23,6 @@ interface EmailTemplateContext {
   [key: string]: unknown
 }
 
-// User retrieval function
 async function getUserDetails(userId: string): Promise<Profile | null> {
   const supabase = createClient<Database>(
     process.env.PUBLIC_SUPABASE_URL!,
@@ -52,7 +49,6 @@ async function getUserDetails(userId: string): Promise<Profile | null> {
   return data && data.length > 0 ? data[0] : null
 }
 
-// Template loading and compilation
 function loadEmailTemplate(templateName: string): {
   html: TemplateDelegate
   text: TemplateDelegate
@@ -69,7 +65,6 @@ function loadEmailTemplate(templateName: string): {
   return { html: htmlTemplate, text: textTemplate }
 }
 
-// Welcome email specific function
 export async function sendWelcomeEmail(user: User): Promise<void> {
   const profile = await getUserDetails(user.id)
   if (!profile || !profile.full_name) {
@@ -96,7 +91,6 @@ export async function sendWelcomeEmail(user: User): Promise<void> {
   )
 }
 
-// Contact form email function
 export async function sendContactFormEmail(
   formData: {
     name: string
@@ -130,7 +124,6 @@ ${formData.message}
   await sendEmail(adminEmail, subject, text, html, formData.email)
 }
 
-// Generic email sending function
 export async function sendEmail(
   to: string | string[],
   subject: string,

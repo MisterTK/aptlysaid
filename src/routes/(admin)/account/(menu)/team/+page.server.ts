@@ -6,7 +6,6 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
   try {
     const supabase = locals.supabase
 
-    // Debug: Check session
     const { user } = await locals.safeGetSession()
     console.log("Team page - User ID:", user?.id)
     console.log(

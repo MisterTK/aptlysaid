@@ -1,7 +1,7 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { GoogleMyBusinessWrapperV3 } from "$lib/services/google-my-business-wrapper-v2"
-// Use Node.js environment variables instead of SvelteKit env imports
+
 const publicEnv = process.env
 const privateEnv = process.env
 
@@ -14,7 +14,6 @@ export const load: PageServerLoad = async ({
     redirect(303, "/login/sign_in")
   }
 
-  // Check if user has an organization
   const { data: orgMembershipsData } = await supabaseServiceRole
     .from("tenant_users")
     .select("tenant_id, role, tenants(id, name, slug)")
@@ -27,11 +26,10 @@ export const load: PageServerLoad = async ({
       : null
 
   if (!orgMemberships) {
-    // User has no organization, redirect to create one
+
     redirect(303, "/account/create-organization")
   }
 
-  // Store the current tenant in cookies
   const currentTenant = orgMemberships.tenants
   if (currentTenant) {
     cookies.set("current_tenant_id", currentTenant.id, {
@@ -42,7 +40,6 @@ export const load: PageServerLoad = async ({
     })
   }
 
-  // Check Google My Business connection status
   let googleConnected = false
   if (currentTenant?.id) {
     try {

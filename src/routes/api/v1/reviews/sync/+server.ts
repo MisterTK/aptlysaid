@@ -24,13 +24,12 @@ export const POST: RequestHandler = async ({
   }
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Start sync workflow
     const { workflowId } = await v2Client.syncLocation(locationId)
 
     return json({

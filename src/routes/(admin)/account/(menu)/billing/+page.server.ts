@@ -13,7 +13,6 @@ export const load: PageServerLoad = async ({
     redirect(303, "/login")
   }
 
-  // Get or create customer
   const { error: idError, customerId } = await getOrCreateCustomerId({
     supabaseServiceRole,
     user,
@@ -27,7 +26,6 @@ export const load: PageServerLoad = async ({
     })
   }
 
-  // Fetch comprehensive subscription details
   const subscriptionResult = await fetchSubscription({ customerId })
 
   if (subscriptionResult.error) {
@@ -48,12 +46,11 @@ export const load: PageServerLoad = async ({
   } = subscriptionResult
 
   return {
-    // Legacy compatibility
+
     isActiveCustomer: hasActiveSubscription,
     hasEverHadSubscription,
     currentPlanId: primarySubscription?.appSubscription?.id,
 
-    // Enhanced subscription details
     subscription: primarySubscription
       ? {
           id: primarySubscription.stripeSubscription.id,
@@ -75,7 +72,6 @@ export const load: PageServerLoad = async ({
         }
       : null,
 
-    // Subscription insights
     subscriptionInsights: {
       hasActiveSubscription,
       hasTrialSubscription,
@@ -84,7 +80,6 @@ export const load: PageServerLoad = async ({
       hasMultipleSubscriptions: subscriptionCount > 1,
     },
 
-    // Customer details
     customerId,
   }
 }

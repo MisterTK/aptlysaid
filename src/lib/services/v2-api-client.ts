@@ -166,7 +166,6 @@ export class V2ApiClient {
     return response.json()
   }
 
-  // Review methods
   async getReviews(locationId?: string): Promise<{ reviews: V2Review[] }> {
     const params = locationId ? `?location_id=${locationId}` : ""
     return this.fetchV2Api(`/reviews${params}`)
@@ -176,7 +175,6 @@ export class V2ApiClient {
     return this.fetchV2Api("/pending-responses")
   }
 
-  // Location methods
   async getLocations(): Promise<{ locations: V2Location[] }> {
     return this.fetchV2Api("/locations")
   }
@@ -188,7 +186,6 @@ export class V2ApiClient {
     })
   }
 
-  // Workflow methods
   async getWorkflows(status?: string): Promise<{ workflows: V2Workflow[] }> {
     const params = status ? `?status=${status}` : ""
     return this.fetchV2Api(`/workflows${params}`)
@@ -204,7 +201,6 @@ export class V2ApiClient {
     })
   }
 
-  // AI Response methods
   async generateAiResponse(reviewId: string): Promise<{ workflowId: string }> {
     return this.fetchV2Api("/generate-response", {
       method: "POST",
@@ -246,7 +242,6 @@ export class V2ApiClient {
     })
   }
 
-  // Business configuration methods
   async getBusinessGuidance(): Promise<{
     guidance: V2BusinessGuidance | null
   }> {
@@ -332,7 +327,6 @@ export class V2ApiClient {
     })
   }
 
-  // Team management methods
   async getTeamMembers(): Promise<{ members: V2TeamMember[] }> {
     return this.fetchV2Api("/team-members")
   }
@@ -351,7 +345,6 @@ export class V2ApiClient {
     return this.fetchV2Api("/invitations")
   }
 
-  // Onboarding methods
   async getOnboardingProgress(): Promise<{ progress: V2OnboardingProgress }> {
     return this.fetchV2Api("/onboarding-progress")
   }
@@ -366,7 +359,6 @@ export class V2ApiClient {
     })
   }
 
-  // Queue management
   async getResponseQueue(): Promise<{ queue: Record<string, unknown>[] }> {
     return this.fetchV2Api("/response-queue")
   }
@@ -380,12 +372,10 @@ export class V2ApiClient {
     })
   }
 
-  // Metrics
   async getResponseMetrics(): Promise<{ metrics: Record<string, unknown>[] }> {
     return this.fetchV2Api("/response-metrics")
   }
 
-  // Profile
   async getProfile(): Promise<{ profile: Record<string, unknown> }> {
     return this.fetchV2Api("/profile")
   }
@@ -399,7 +389,6 @@ export class V2ApiClient {
     })
   }
 
-  // Get AI Response
   async getAiResponse(responseId: string): Promise<V2AiResponse | null> {
     try {
       const response = await this.fetchV2Api(`/ai-responses/${responseId}`)
@@ -410,9 +399,8 @@ export class V2ApiClient {
     }
   }
 
-  // Helper to create client from Supabase and organization
   static async create(supabase: SupabaseClient): Promise<V2ApiClient | null> {
-    // Check if we have a session
+
     const {
       data: { session },
     } = await supabase.auth.getSession()

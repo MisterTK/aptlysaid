@@ -22,19 +22,15 @@ export const GET: RequestHandler = async ({
     const limit = parseInt(url.searchParams.get("limit") || "20")
     const offset = parseInt(url.searchParams.get("offset") || "0")
 
-    // Create v2 API client
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Get workflows from v2 API
     const { workflows } = await v2Client.getWorkflows(status || undefined)
 
-    // Apply pagination
     const paginatedWorkflows = workflows.slice(offset, offset + limit)
 
-    // Calculate stats from last 24 hours
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const recentWorkflows = workflows.filter((w) => w.created_at >= oneDayAgo)
 
@@ -85,7 +81,6 @@ export const POST: RequestHandler = async ({
       return json({ error: "workflowType is required" }, { status: 400 })
     }
 
-    // Validate workflow type
     const validWorkflowTypes = [
       "review_processing",
       "review_sync",
@@ -96,13 +91,11 @@ export const POST: RequestHandler = async ({
       return json({ error: "Invalid workflow type" }, { status: 400 })
     }
 
-    // Create v2 API client
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Start the workflow
     const { workflowId } = await v2Client.createWorkflow(workflowType, context)
 
     return json({
@@ -142,8 +135,6 @@ export const PATCH: RequestHandler = async ({
       )
     }
 
-    // V2 workflows are managed by the orchestrator
-    // For now, we don't support cancel/retry operations
     return json(
       {
         error: "Workflow modifications not supported in v2",

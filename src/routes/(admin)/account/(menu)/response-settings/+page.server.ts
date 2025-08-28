@@ -18,7 +18,6 @@ export const load: PageServerLoad = async ({
     redirect(303, "/account")
   }
 
-  // Get response settings using V2 schema
   const { data: settings, error: settingsError } = await supabaseServiceRole
     .from("response_settings")
     .select("*")
@@ -29,7 +28,6 @@ export const load: PageServerLoad = async ({
     console.error("Error fetching response settings:", settingsError)
   }
 
-  // Get queue statistics using V2 schema
   const [{ count: pending }, { count: processing }, { count: failed }] =
     await Promise.all([
       supabaseServiceRole
@@ -49,7 +47,6 @@ export const load: PageServerLoad = async ({
         .eq("status", "failed"),
     ])
 
-  // Get today's completed count
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -60,7 +57,6 @@ export const load: PageServerLoad = async ({
     .eq("status", "completed")
     .gte("published_at", today.toISOString())
 
-  // Calculate next publish time if auto-publish is enabled
   let next_publish_time = null
   if (settings?.auto_publish_enabled && (pending || 0) > 0) {
     const delay = settings.auto_publish_delay_hours || 1

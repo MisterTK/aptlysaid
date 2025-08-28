@@ -1,9 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 import { GoogleMyBusinessWrapperV3 } from "../services/google-my-business-wrapper-v2"
-// Removed unused BatchResponseGenerator import
+
 import type { Database } from "../../DatabaseDefinitions"
 
-// Helper to convert star rating string to number
 const starRatingToNumber = (rating: string): number => {
   const ratingMap: Record<string, number> = {
     ONE: 1,
@@ -49,7 +48,6 @@ export async function syncUnansweredReviews() {
         encryptionKey: process.env.TOKEN_ENCRYPTION_KEY!,
       })
 
-      // Get all accounts and then all locations for each account
       const accounts = await gmb.listAccounts(org.tenant_id!)
       const locations: unknown[] = []
       for (const account of accounts) {

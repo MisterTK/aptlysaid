@@ -35,7 +35,6 @@ export const load = async ({ fetch, data, depends }) => {
         },
       )
 
-  // Redirect if already logged in
   const { session, user } = await load_helper(data.session, supabase)
   if (session && user) {
     redirect(303, "/account")

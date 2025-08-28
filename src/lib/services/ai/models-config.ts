@@ -12,7 +12,6 @@ export interface ModelsConfig {
   models: Record<string, ModelInfo>
 }
 
-// Load configuration from JSON file
 const { defaultModel, models } = modelsConfig as ModelsConfig
 
 export const DEFAULT_MODEL = defaultModel

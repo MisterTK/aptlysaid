@@ -10,12 +10,8 @@ export interface StripeErrorInfo {
   logLevel: "error" | "warn" | "info"
 }
 
-/**
- * Comprehensive Stripe error handling utility
- * Provides user-friendly error messages and determines retry behavior
- */
 export function handleStripeError(error: unknown): StripeErrorInfo {
-  // Handle non-Stripe errors
+
   if (!error?.type?.startsWith?.("Stripe")) {
     return {
       type: "UnknownError",
@@ -120,9 +116,6 @@ export function handleStripeError(error: unknown): StripeErrorInfo {
   }
 }
 
-/**
- * Get user-friendly message for card errors
- */
 function getCardErrorMessage(error: Stripe.StripeCardError): string {
   switch (error.code) {
     case "card_declined":
@@ -230,9 +223,6 @@ function getCardErrorMessage(error: Stripe.StripeCardError): string {
   }
 }
 
-/**
- * Determine if a card error might be retryable
- */
 function isRetryableCardError(code?: string): boolean {
   const retryableCodes = [
     "processing_error",
@@ -244,9 +234,6 @@ function isRetryableCardError(code?: string): boolean {
   return code ? retryableCodes.includes(code) : false
 }
 
-/**
- * Retry utility with exponential backoff
- */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
@@ -262,12 +249,10 @@ export async function retryWithBackoff<T>(
 
       const errorInfo = handleStripeError(error)
 
-      // Don't retry if error is not retryable or we've exhausted attempts
       if (!errorInfo.shouldRetry || attempt === maxRetries) {
         throw error
       }
 
-      // Calculate delay with exponential backoff and jitter
       const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
 
       console.warn(
@@ -282,9 +267,6 @@ export async function retryWithBackoff<T>(
   throw lastError
 }
 
-/**
- * Log Stripe errors with appropriate level and context
- */
 export function logStripeError(
   error: unknown,
   context: Record<string, unknown> = {},
@@ -317,9 +299,6 @@ export function logStripeError(
   }
 }
 
-/**
- * Helper to create standardized Stripe operation results
- */
 export interface StripeOperationResult<T = unknown> {
   success: boolean
   data?: T

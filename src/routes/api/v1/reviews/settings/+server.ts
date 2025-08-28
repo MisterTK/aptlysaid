@@ -17,7 +17,6 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-    // Create v2 API client
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
@@ -25,19 +24,17 @@ export const GET: RequestHandler = async ({
 
     const { settings } = await v2Client.getResponseSettings()
 
-    // Map database field names to frontend field names
     const mappedSettings = settings
       ? {
           auto_publish: settings.auto_publish_enabled,
           min_rating: settings.require_approval_below_rating,
           max_per_hour: settings.publish_rate_limit_per_hour,
-          max_per_day: settings.publish_rate_limit_per_hour * 24, // Calculate from hourly limit
-          response_delay: settings.auto_publish_delay_hours * 3600, // Convert hours to seconds
-          business_hours_only: false, // Not in v2 schema
-          business_hours_start: 9, // Default
-          business_hours_end: 17, // Default
-          timezone: "America/New_York", // Default
-          // Default values for UI-only fields
+          max_per_day: settings.publish_rate_limit_per_hour * 24,
+          response_delay: settings.auto_publish_delay_hours * 3600,
+          business_hours_only: false,
+          business_hours_start: 9,
+          business_hours_end: 17,
+          timezone: "America/New_York",
           auto_approve_5_star: false,
           require_approval_low_rating: true,
         }
@@ -68,7 +65,6 @@ export const POST: RequestHandler = async ({
   try {
     const rawSettings = await request.json()
 
-    // Map field names from frontend to actual database schema
     const settings = {
       auto_publish_enabled: rawSettings.auto_publish,
       auto_publish_positive:
@@ -77,18 +73,17 @@ export const POST: RequestHandler = async ({
         rawSettings.auto_publish && rawSettings.min_rating <= 3,
       auto_publish_negative:
         rawSettings.auto_publish && rawSettings.min_rating <= 2,
-      min_confidence_score: 0.8, // Default
-      min_quality_score: 0.7, // Default
+      min_confidence_score: 0.8,
+      min_quality_score: 0.7,
       require_human_review_below_threshold: !rawSettings.auto_approve_5_star,
       rate_limits: {
         max_per_hour: rawSettings.max_per_hour || 10,
         max_per_day: rawSettings.max_per_day || 100,
         response_delay: rawSettings.response_delay || 30,
       },
-      include_upsell: false, // Default for now
+      include_upsell: false,
     }
 
-    // Validate settings
     if (
       settings.min_confidence_score < 0 ||
       settings.min_confidence_score > 1
@@ -116,7 +111,6 @@ export const POST: RequestHandler = async ({
       )
     }
 
-    // Create v2 API client
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })

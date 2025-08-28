@@ -4,7 +4,6 @@ import type { Database } from "../../../DatabaseDefinitions"
 import Stripe from "stripe"
 import { pricingPlans } from "../../(marketing)/pricing/pricing_plans"
 
-// Modern Stripe client initialization with latest API version and best practices - lazy load
 let stripe: Stripe | null = null
 function getStripe() {
   if (!stripe) {
@@ -35,7 +34,7 @@ export const getOrCreateCustomerId = async ({
   user: User
 }) => {
   try {
-    // Check if customer already exists in our database
+
     const { data: dbCustomer, error } = await supabaseServiceRole
       .from("stripe_customers")
       .select("stripe_customer_id")
@@ -43,19 +42,19 @@ export const getOrCreateCustomerId = async ({
       .single()
 
     if (error && error.code !== "PGRST116") {
-      // PGRST116 == no rows returned
+
       console.error("Database error fetching stripe customer:", error)
       return { error: new Error(`Database error: ${error.message}`) }
     }
 
     if (dbCustomer?.stripe_customer_id) {
-      // Verify the customer still exists in Stripe (they might have been deleted)
+
       try {
         await getStripe().customers.retrieve(dbCustomer.stripe_customer_id)
         return { customerId: dbCustomer.stripe_customer_id }
       } catch (stripeError) {
         if (stripeError.code === "resource_missing") {
-          // Customer was deleted in Stripe, remove from our database and recreate
+
           await supabaseServiceRole
             .from("stripe_customers")
             .delete()
@@ -71,7 +70,6 @@ export const getOrCreateCustomerId = async ({
       }
     }
 
-    // Fetch user profile data for customer creation
     const { data: profileData, error: profileError } = await supabaseServiceRole
       .from("profiles")
       .select("full_name, website")
@@ -88,7 +86,6 @@ export const getOrCreateCustomerId = async ({
       }
     }
 
-    // Create Stripe customer with idempotency key
     const idempotencyKey = `customer_create_${user.id}_${Date.now()}`
 
     let customer: Stripe.Customer
@@ -103,7 +100,7 @@ export const getOrCreateCustomerId = async ({
             environment: process.env.NODE_ENV || "development",
             created_at: new Date().toISOString(),
           },
-          // Add default payment method collection for future subscriptions
+
           invoice_settings: {
             default_payment_method: undefined,
           },
@@ -115,7 +112,6 @@ export const getOrCreateCustomerId = async ({
     } catch (stripeError) {
       console.error("Error creating Stripe customer:", stripeError)
 
-      // Handle specific Stripe errors gracefully
       if (stripeError.type === "StripeCardError") {
         return {
           error: new Error(
@@ -149,7 +145,6 @@ export const getOrCreateCustomerId = async ({
       }
     }
 
-    // Store customer mapping in database with retry logic
     let insertAttempts = 0
     const maxInsertAttempts = 3
 
@@ -162,14 +157,13 @@ export const getOrCreateCustomerId = async ({
         })
 
       if (!insertError) {
-        break // Success
+        break
       }
 
       insertAttempts++
 
       if (insertError.code === "23505") {
-        // Unique constraint violation - customer was created by another request
-        // Fetch the existing customer ID
+
         const { data: existingCustomer } = await supabaseServiceRole
           .from("stripe_customers")
           .select("stripe_customer_id")
@@ -191,7 +185,6 @@ export const getOrCreateCustomerId = async ({
         }
       }
 
-      // Wait before retrying
       await new Promise((resolve) => setTimeout(resolve, 100 * insertAttempts))
     }
 
@@ -208,7 +201,7 @@ export const fetchSubscription = async ({
   customerId: string
 }) => {
   try {
-    // Fetch user's subscriptions with expanded data for better insights
+
     let stripeSubscriptions: Stripe.ApiList<Stripe.Subscription>
     try {
       stripeSubscriptions = await getStripe().subscriptions.list({
@@ -220,7 +213,6 @@ export const fetchSubscription = async ({
     } catch (stripeError) {
       console.error("Error fetching Stripe subscriptions:", stripeError)
 
-      // Handle specific Stripe errors
       if (stripeError.type === "StripeInvalidRequestError") {
         return {
           error: new Error(`Invalid customer ID: ${stripeError.message}`),
@@ -236,7 +228,6 @@ export const fetchSubscription = async ({
       return { error: new Error(`Stripe error: ${stripeError.message}`) }
     }
 
-    // Define priority order for subscription statuses
     const statusPriority = {
       active: 1,
       trialing: 2,
@@ -249,10 +240,9 @@ export const fetchSubscription = async ({
       ended: 9,
     } as const
 
-    // Find the highest priority active subscription
     const primaryStripeSubscription = stripeSubscriptions.data
       .filter((sub) => {
-        // Only consider subscriptions that are not fully ended
+
         return (
           (sub.status !== "canceled" && sub.status !== "ended") ||
           (sub.status === "past_due" &&
@@ -270,7 +260,6 @@ export const fetchSubscription = async ({
           return priorityA - priorityB
         }
 
-        // If same priority, prefer newer subscription
         return (b.created || 0) - (a.created || 0)
       })[0]
 
@@ -278,7 +267,7 @@ export const fetchSubscription = async ({
     let primarySubscription = null
 
     if (primaryStripeSubscription) {
-      // Extract product ID from subscription line items
+
       const productId =
         (primaryStripeSubscription.items?.data?.[0]?.price
           ?.product as string) ?? ""
@@ -293,7 +282,6 @@ export const fetchSubscription = async ({
         }
       }
 
-      // Find matching app subscription plan
       appSubscription = pricingPlans.find(
         (plan) => plan.stripe_product_id === productId,
       )
@@ -309,11 +297,10 @@ export const fetchSubscription = async ({
         }
       }
 
-      // Build comprehensive subscription object
       primarySubscription = {
         stripeSubscription: primaryStripeSubscription,
         appSubscription: appSubscription,
-        // Additional computed fields for convenience
+
         isActive: primaryStripeSubscription.status === "active",
         isTrialing: primaryStripeSubscription.status === "trialing",
         isPastDue: primaryStripeSubscription.status === "past_due",
@@ -336,7 +323,6 @@ export const fetchSubscription = async ({
       }
     }
 
-    // Calculate subscription history insights
     const hasEverHadSubscription = stripeSubscriptions.data.length > 0
     const hasActiveSubscription = !!primarySubscription?.isActive
     const hasTrialSubscription = !!primarySubscription?.isTrialing
@@ -359,7 +345,6 @@ export const fetchSubscription = async ({
   }
 }
 
-// Modern utility functions for subscription management
 export const cancelSubscription = async ({
   subscriptionId,
   cancelAtPeriodEnd = true,
@@ -422,7 +407,7 @@ export const updateSubscription = async ({
   prorationBehavior?: "create_prorations" | "none" | "always_invoice"
 }) => {
   try {
-    // First get the current subscription to find the item to update
+
     const currentSubscription =
       await getStripe().subscriptions.retrieve(subscriptionId)
     const currentItem = currentSubscription.items.data[0]
@@ -494,7 +479,7 @@ export const createCheckoutSession = async ({
         ...metadata,
         created_at: new Date().toISOString(),
       },
-      // Modern checkout features
+
       customer_update: {
         address: "auto",
         name: "auto",
@@ -508,13 +493,12 @@ export const createCheckoutSession = async ({
               },
             }
           : undefined,
-      // Tax calculation
+
       automatic_tax: {
         enabled: true,
       },
     }
 
-    // Add subscription-specific options
     if (mode === "subscription") {
       sessionParams.subscription_data = {
         metadata: metadata,
@@ -578,7 +562,6 @@ export const getUpcomingInvoice = async ({
       customer: customerId,
     }
 
-    // If preview a subscription change
     if (subscriptionId && newPriceId) {
       const subscription =
         await getStripe().subscriptions.retrieve(subscriptionId)

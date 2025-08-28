@@ -27,7 +27,6 @@ export const PATCH: RequestHandler = async ({
       throw error(400, "User ID and role are required")
     }
 
-    // Validate role
     const validRoles: UserRole[] = ["owner", "admin", "manager", "member"]
     if (!validRoles.includes(role)) {
       throw error(400, "Invalid role")

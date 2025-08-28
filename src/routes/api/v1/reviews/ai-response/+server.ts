@@ -21,7 +21,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       feedback,
     } = body
 
-    // Handle bulk operations
     if (responseIds && action) {
       if (!["approve", "reject"].includes(action)) {
         return json({ error: "Invalid action" }, { status: 400 })
@@ -67,12 +66,10 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       return json({ responses, count: responses?.length || 0 })
     }
 
-    // Handle single response operations
     if (!responseId) {
       return json({ error: "Missing responseId" }, { status: 400 })
     }
 
-    // Handle text editing
     if (action === "edit") {
       if (!text) {
         return json({ error: "Missing text for edit" }, { status: 400 })
@@ -105,7 +102,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       return json({ response })
     }
 
-    // Handle status updates (approve/reject)
     if (action && ["approve", "reject"].includes(action)) {
       const newStatus = action === "approve" ? "approved" : "rejected"
 
@@ -149,7 +145,6 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
       return json({ response })
     }
 
-    // Legacy format support
     if (!reviewId || !status) {
       return json({ error: "Missing required fields" }, { status: 400 })
     }

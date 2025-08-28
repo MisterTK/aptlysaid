@@ -22,7 +22,7 @@ interface BatchGenerationResult {
 
 export class BatchResponseGenerator {
   private vertex: ReturnType<typeof createVertexAI>
-  private maxBatchSize = 100 // Gemini batch API limit
+  private maxBatchSize = 100
   private supabase?: SupabaseClient<Database>
 
   constructor(supabase?: SupabaseClient<Database>) {
@@ -30,20 +30,16 @@ export class BatchResponseGenerator {
     this.supabase = supabase
   }
 
-  /**
-   * Generates the meta prompt that incorporates business guidance, upsell items, and rejection feedback
-   */
   private async generateMetaPrompt(
     businessGuidance: BusinessGuidance,
     upsellItems: UpsellItem[],
     organizationId: string,
   ): Promise<string> {
-    // Parse business guidance from V2 structure
+
     let brandIdentity = ""
     let responseGuidelines: string[] = []
     let thingsToAvoid: string[] = []
 
-    // Check if business guidance has response guidelines in any available property
     const guidelinesProperty =
       "review_response_guidelines" in businessGuidance
         ? (businessGuidance as { review_response_guidelines: string })
@@ -62,7 +58,6 @@ export class BatchResponseGenerator {
       }
     }
 
-    // Validate required fields
     if (!brandIdentity || responseGuidelines.length === 0) {
       throw new Error(
         "Business guidance must include Brand Identity and Response Guidelines",
@@ -73,7 +68,6 @@ export class BatchResponseGenerator {
       .filter((item) => (item as { is_active: boolean }).is_active)
       .sort((a, b) => (b.priority || 0) - (a.priority || 0))
 
-    // Get recent rejection feedback for learning
     let rejectionFeedback: string[] = []
     if (this.supabase) {
       const { data: rejectedResponses } = await this.supabase
@@ -140,9 +134,6 @@ MAXIMUM RESPONSE LENGTH: 150 words.`
     return prompt
   }
 
-  /**
-   * Generates a single review response using the standard API
-   */
   private async generateSingleResponse(
     review: Review,
     metaPrompt: string,
@@ -176,12 +167,6 @@ Generate a personalized response to this review.`
     }
   }
 
-  /**
-   * Process a batch of reviews to generate AI responses
-   * Note: Currently using sequential processing as Gemini Batch API
-   * requires file upload to GCS which adds complexity.
-   * This can be upgraded to true batch API when needed for scale.
-   */
   async processBatch(
     requests: BatchReviewRequest[],
     model: string = modelsConfig.defaultModel,
@@ -190,12 +175,10 @@ Generate a personalized response to this review.`
     const results: BatchGenerationResult[] = []
     let processed = 0
 
-    // Process in chunks to avoid rate limits
     const chunkSize = 5
     for (let i = 0; i < requests.length; i += chunkSize) {
       const chunk = requests.slice(i, i + chunkSize)
 
-      // Process chunk in parallel
       const chunkResults = await Promise.all(
         chunk.map(async ({ review, businessGuidance, upsellItems }) => {
           try {
@@ -229,7 +212,6 @@ Generate a personalized response to this review.`
 
       results.push(...chunkResults)
 
-      // Add delay between chunks to respect rate limits
       if (i + chunkSize < requests.length) {
         await new Promise((resolve) => setTimeout(resolve, 1000))
       }
@@ -238,9 +220,6 @@ Generate a personalized response to this review.`
     return results
   }
 
-  /**
-   * Generate responses for all unanswered reviews in an organization
-   */
   async generateForOrganization(
     organizationId: string,
     reviews: Review[],
@@ -249,7 +228,7 @@ Generate a personalized response to this review.`
     model: string = modelsConfig.defaultModel,
     onProgress?: (processed: number, total: number) => void,
   ): Promise<BatchGenerationResult[]> {
-    // Filter reviews that need responses
+
     const reviewsNeedingResponse = reviews.filter(
       (review) =>
         !(review as { review_reply?: string }).review_reply &&
@@ -260,7 +239,6 @@ Generate a personalized response to this review.`
       return []
     }
 
-    // Create batch requests
     const requests: BatchReviewRequest[] = reviewsNeedingResponse.map(
       (review) => ({
         review,
@@ -269,7 +247,6 @@ Generate a personalized response to this review.`
       }),
     )
 
-    // Process in batches if needed
     if (requests.length > this.maxBatchSize) {
       const allResults: BatchGenerationResult[] = []
 
@@ -292,10 +269,6 @@ Generate a personalized response to this review.`
     return this.processBatch(requests, model, onProgress)
   }
 
-  /**
-   * Generate AI responses for a batch job and save them to the database
-   * This method is used by the API endpoint and handles database operations
-   */
   async generateBatch(
     jobId: string,
     reviews: Review[],
@@ -312,14 +285,13 @@ Generate a personalized response to this review.`
     let errorCount = 0
 
     try {
-      // Get upsell items for the organization
+
       const { data: upsellItems } = await this.supabase
         .from("upsell_items")
         .select("*")
         .eq("tenant_id", organizationId)
         .eq("is_active", true)
 
-      // Generate responses using existing method
       const results = await this.generateForOrganization(
         organizationId,
         reviews,
@@ -328,17 +300,16 @@ Generate a personalized response to this review.`
         model,
         async (processed) => {
           processedCount = processed
-          // Update job progress
+
           await this.supabase!.from("batch_generation_jobs")
             .update({ processed_reviews: processed })
             .eq("id", jobId)
         },
       )
 
-      // Save results to database
       for (const result of results) {
         if (result.response) {
-          // Save successful response using V2 schema
+
           const { error } = await this.supabase.from("ai_responses").insert({
             review_id: result.reviewId,
             tenant_id: organizationId,
@@ -365,7 +336,6 @@ Generate a personalized response to this review.`
         }
       }
 
-      // Update final job status
       await this.supabase
         .from("batch_generation_jobs")
         .update({
@@ -379,7 +349,6 @@ Generate a personalized response to this review.`
     } catch (error) {
       console.error("Batch generation failed:", error)
 
-      // Mark job as failed
       await this.supabase
         .from("batch_generation_jobs")
         .update({

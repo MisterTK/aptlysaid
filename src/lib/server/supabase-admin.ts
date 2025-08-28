@@ -10,7 +10,7 @@ export function createAdminClient() {
   }
 
   if (!adminClient) {
-    // Get environment variables at runtime to avoid build dependencies
+
     const url = process.env.PUBLIC_SUPABASE_URL
     const serviceRole = process.env.PRIVATE_SUPABASE_SERVICE_ROLE
 

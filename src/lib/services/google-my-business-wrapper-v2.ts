@@ -35,7 +35,7 @@ export class GoogleMyBusinessWrapperV3 {
         "WARNING: Using default encryption key. Set TOKEN_ENCRYPTION_KEY environment variable for production!",
       )
     }
-    // Ensure key is 32 bytes for AES-256
+
     return key.padEnd(32, "0").slice(0, 32)
   }
 
@@ -54,7 +54,6 @@ export class GoogleMyBusinessWrapperV3 {
       cipher.final(),
     ])
 
-    // Combine IV and encrypted data and return as base64 string for text storage
     return Buffer.concat([iv, encrypted]).toString("base64")
   }
 
@@ -63,10 +62,9 @@ export class GoogleMyBusinessWrapperV3 {
     console.log("🔐 [V3 Wrapper] Starting token decryption")
 
     try {
-      // Convert base64 string back to buffer
+
       const encryptedBuffer = Buffer.from(encryptedString, "base64")
 
-      // Extract IV (first 16 bytes) and encrypted data
       const iv = encryptedBuffer.slice(0, 16)
       const encrypted = encryptedBuffer.slice(16)
 
@@ -101,7 +99,7 @@ export class GoogleMyBusinessWrapperV3 {
       response_type: "code",
       scope: `openid email profile ${GOOGLE_MY_BUSINESS_SCOPE}`,
       access_type: "offline",
-      prompt: "consent", // Force to get refresh token
+      prompt: "consent",
       state,
     })
 
@@ -130,7 +128,6 @@ export class GoogleMyBusinessWrapperV3 {
 
     console.log("V3 handleOAuthCallback - Exchanging code for tokens")
 
-    // Exchange code for tokens
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: {
@@ -160,7 +157,6 @@ export class GoogleMyBusinessWrapperV3 {
       throw new Error("No tokens received from Google")
     }
 
-    // Verify token scopes
     const grantedScopes = await this.verifyTokenScopes(tokens.access_token)
     const hasBusinessManageScope = grantedScopes.includes(
       "https://www.googleapis.com/auth/business.manage",
@@ -172,12 +168,10 @@ export class GoogleMyBusinessWrapperV3 {
     )
     console.log(`V3 Has business.manage scope: ${hasBusinessManageScope}`)
 
-    // Encrypt tokens before storing
     const encryptedAccessToken = this.encrypt(tokens.access_token)
     const encryptedRefreshToken = this.encrypt(tokens.refresh_token)
     const expiresAt = new Date(Date.now() + tokens.expires_in * 1000)
 
-    // Store in oauth_tokens table (one token per tenant per provider)
     const { data: oauthToken, error: tokenError } = await this.supabase
       .from("oauth_tokens")
       .upsert(
@@ -209,7 +203,6 @@ export class GoogleMyBusinessWrapperV3 {
       throw tokenError
     }
 
-    // Link all existing locations for this tenant to the OAuth token
     const { error: linkError } = await this.supabase
       .from("locations")
       .update({ oauth_token_id: oauthToken.id })
@@ -217,10 +210,9 @@ export class GoogleMyBusinessWrapperV3 {
 
     if (linkError) {
       console.error("V3 Error linking locations to OAuth token:", linkError)
-      // Don't throw - token is stored successfully, linking can be retried
+
     }
 
-    // Log warning if insufficient scopes
     if (!hasBusinessManageScope) {
       console.warn(
         `WARNING: Organization ${organizationId} connected without business.manage scope. Limited functionality available.`,
@@ -264,7 +256,6 @@ export class GoogleMyBusinessWrapperV3 {
         return false
       }
 
-      // Check if tokens actually exist and are not empty
       if (
         !data.encrypted_access_token ||
         !data.encrypted_refresh_token ||
@@ -291,7 +282,6 @@ export class GoogleMyBusinessWrapperV3 {
       const expiresAt = new Date(data.expires_at)
       const now = new Date()
 
-      // Check if token is already expired
       if (expiresAt <= now) {
         await this.logTokenValidation(
           organizationId,
@@ -301,7 +291,6 @@ export class GoogleMyBusinessWrapperV3 {
         return await this.attemptTokenRefresh(organizationId)
       }
 
-      // Only refresh if token expires in less than 1 minute
       const oneMinuteFromNow = new Date(now.getTime() + 1 * 60 * 1000)
 
       if (expiresAt <= oneMinuteFromNow) {
@@ -343,7 +332,7 @@ export class GoogleMyBusinessWrapperV3 {
 
   private async attemptTokenRefresh(organizationId: string): Promise<boolean> {
     const maxRetries = 3
-    const retryDelays = [1000, 2000, 4000] // 1s, 2s, 4s
+    const retryDelays = [1000, 2000, 4000]
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -417,7 +406,7 @@ export class GoogleMyBusinessWrapperV3 {
     isValid: boolean,
     reason: string,
   ): Promise<void> {
-    // Implement your logging logic here
+
     console.log(
       `[V3 Token Validation] ${organizationId}: ${isValid ? "✅" : "❌"} ${reason}`,
     )
@@ -429,7 +418,6 @@ export class GoogleMyBusinessWrapperV3 {
       return null
     }
 
-    // First check if ANY token exists for debugging
     const { data: unknownToken } = await this.supabase
       .from("oauth_tokens")
       .select("id, status, expires_at")
@@ -471,11 +459,10 @@ export class GoogleMyBusinessWrapperV3 {
     }
 
     try {
-      // Decrypt tokens
+
       const accessToken = this.decrypt(data.encrypted_access_token)
       const refreshToken = this.decrypt(data.encrypted_refresh_token)
 
-      // Mark token as used
       await this.supabase
         .from("oauth_tokens")
         .update({ last_used_at: new Date().toISOString() })
@@ -530,7 +517,6 @@ export class GoogleMyBusinessWrapperV3 {
       return null
     }
 
-    // Create service with token refresh callback
     return new GoogleMyBusinessService(
       tokens.access_token,
       tokens.refresh_token,
@@ -609,7 +595,6 @@ export class GoogleMyBusinessWrapperV3 {
       return
     }
 
-    // First, revoke the token with Google
     try {
       const response = await fetch(
         `https://oauth2.googleapis.com/revoke?token=${tokens.access_token}`,
@@ -635,7 +620,6 @@ export class GoogleMyBusinessWrapperV3 {
       throw new Error("Supabase client required for token deletion")
     }
 
-    // Mark OAuth token as revoked
     console.log(
       `V3 Marking OAuth token as revoked for organization: ${organizationId}`,
     )
@@ -657,7 +641,6 @@ export class GoogleMyBusinessWrapperV3 {
       throw new Error(`Failed to revoke OAuth token: ${tokenError.message}`)
     }
 
-    // Clear oauth_token_id from locations table
     const { error: locationError, count } = await this.supabase
       .from("locations")
       .update({ oauth_token_id: null })
@@ -669,7 +652,7 @@ export class GoogleMyBusinessWrapperV3 {
         `V3 Location OAuth token clearing failed for organization ${organizationId}:`,
         locationError,
       )
-      // Don't throw - token is already revoked
+
     }
 
     console.log(
@@ -677,7 +660,6 @@ export class GoogleMyBusinessWrapperV3 {
     )
   }
 
-  // Delegate methods to maintain compatibility
   async listAccounts(organizationId: string) {
     const service = await this.createService(organizationId)
     if (!service) {

@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({
   }
 
   try {
-    // Get workflows using V2 schema
+
     const { data: workflows, error: workflowsError } = await supabaseServiceRole
       .from("workflows")
       .select(
@@ -47,7 +47,6 @@ export const load: PageServerLoad = async ({
       console.error("Error loading workflows:", workflowsError)
     }
 
-    // Get workflow statistics
     const { data: stats } = await supabaseServiceRole
       .from("workflows")
       .select("status, workflow_type")

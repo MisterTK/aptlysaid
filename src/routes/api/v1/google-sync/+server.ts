@@ -2,10 +2,6 @@ import { json } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 import { V2ApiClient } from "$lib/services/v2-api-client"
 
-/**
- * Manual Google My Business sync endpoint using V2 workflow architecture
- * Creates a review sync workflow for the organization
- */
 export const GET: RequestHandler = async ({
   locals: { safeGetSession, supabase },
   cookies,
@@ -21,7 +17,7 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-    // Check if organization has active OAuth tokens
+
     const { data: tokenData } = await supabase
       .from("oauth_tokens")
       .select("status, token_metadata")
@@ -35,25 +31,21 @@ export const GET: RequestHandler = async ({
       return json({ error: "No Google connection found" }, { status: 404 })
     }
 
-    // Create V2 API client
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Create a review sync workflow for all locations of this tenant
     const { workflowId } = await v2Client.createWorkflow("review_sync", {
       tenantId: tenantId,
       triggerType: "manual_sync",
-      syncAll: true, // Sync all locations for this tenant
+      syncAll: true,
     })
 
     console.log(
       `Created review sync workflow ${workflowId} for tenant ${tenantId}`,
     )
 
-    // Return workflow creation confirmation
-    // Note: In V2 architecture, sync happens asynchronously
     return json({
       success: true,
       workflowId: workflowId,
@@ -77,4 +69,4 @@ export const GET: RequestHandler = async ({
   }
 }
 
-export const POST = GET // Allow both GET and POST
+export const POST = GET

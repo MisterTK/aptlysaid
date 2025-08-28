@@ -23,7 +23,4 @@ export async function getUserTenant(supabase: SupabaseClient, userId: string) {
   return { id: data[0].tenant_id }
 }
 
-/**
- * @deprecated Use getUserTenant instead
- */
 export const getUserOrganization = getUserTenant

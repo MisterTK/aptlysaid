@@ -5,7 +5,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 
   if (invitationToken) {
     try {
-      // Fetch invitation details including organization name and role
+
       const { data: invitation, error } = await supabase
         .from("organization_invitations")
         .select(

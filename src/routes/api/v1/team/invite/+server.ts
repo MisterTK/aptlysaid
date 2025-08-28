@@ -26,25 +26,21 @@ export const POST: RequestHandler = async ({
       throw error(400, "Email and role are required")
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       throw error(400, "Invalid email format")
     }
 
-    // Validate role
     const validRoles: UserRole[] = ["admin", "manager", "member"]
     if (!validRoles.includes(role)) {
       throw error(400, "Invalid role")
     }
 
-    // Check if user can assign this role
     const userMgmt = new UserManagementService(supabase)
     if (!userMgmt.canManageRole(tenantContext.userRole, role)) {
       throw error(403, "You do not have permission to assign this role")
     }
 
-    // Get base URL for invitation link
     const baseUrl = `${url.protocol}//${url.host}`
 
     await userMgmt.inviteUser(

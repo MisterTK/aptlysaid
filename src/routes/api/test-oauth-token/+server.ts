@@ -37,7 +37,7 @@ export const POST: RequestHandler = async ({ request }) => {
       status: response.status,
       error: data.error,
       error_description: data.error_description,
-      // Don't expose tokens in response, just confirm if they exist
+
       has_access_token: !!data.access_token,
       has_refresh_token: !!data.refresh_token,
       config_check: {

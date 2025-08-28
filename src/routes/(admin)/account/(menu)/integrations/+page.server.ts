@@ -1,13 +1,12 @@
 import { redirect, fail } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import crypto from "crypto"
-// Use Node.js environment variables instead of SvelteKit env imports
+
 const publicEnv = process.env
 const privateEnv = process.env
 const PUBLIC_GOOGLE_CLIENT_ID = process.env.PUBLIC_GOOGLE_CLIENT_ID!
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
 
-// Token encryption functions for secure storage
 function getEncryptionKey(): string {
   const key =
     privateEnv.TOKEN_ENCRYPTION_KEY ||
@@ -18,7 +17,7 @@ function getEncryptionKey(): string {
       "WARNING: Using default encryption key. Set TOKEN_ENCRYPTION_KEY environment variable for production!",
     )
   }
-  // Ensure key is 32 bytes for AES-256
+
   return key.padEnd(32, "0").slice(0, 32)
 }
 
@@ -33,7 +32,6 @@ function encryptToken(text: string): string {
 
   const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()])
 
-  // Combine IV and encrypted data and return as base64 string for text storage
   return Buffer.concat([iv, encrypted]).toString("base64")
 }
 
@@ -41,10 +39,9 @@ function decryptToken(encryptedString: string): string {
   const encryptionKey = getEncryptionKey()
 
   try {
-    // Convert base64 string back to buffer
+
     const encryptedBuffer = Buffer.from(encryptedString, "base64")
 
-    // Extract IV (first 16 bytes) and encrypted data
     const iv = encryptedBuffer.slice(0, 16)
     const encrypted = encryptedBuffer.slice(16)
 
@@ -65,10 +62,9 @@ function decryptToken(encryptedString: string): string {
   }
 }
 
-// Error message translation for better user experience
 function getUserFriendlyErrorMessage(error: string): string {
   const errorMappings: Record<string, string> = {
-    // Authentication errors
+
     REFRESH_TOKEN_INVALID:
       "Your Google connection has expired. Please reconnect your account.",
     invalid_grant:
@@ -76,7 +72,6 @@ function getUserFriendlyErrorMessage(error: string): string {
     ACCESS_TOKEN_SCOPE_INSUFFICIENT:
       "Missing required permissions. Please reconnect with all necessary permissions.",
 
-    // API errors
     "403":
       "Access denied. Please ensure you have management permissions for your Google My Business account.",
     "404":
@@ -87,20 +82,17 @@ function getUserFriendlyErrorMessage(error: string): string {
     "503":
       "Google My Business service is temporarily unavailable. Please try again later.",
 
-    // Network errors
     ECONNREFUSED:
       "Could not connect to the service. Please check your internet connection.",
     ETIMEDOUT: "The request timed out. Please try again.",
     NetworkError:
       "Network connection failed. Please check your internet connection.",
 
-    // Permission errors
     PERMISSION_DENIED:
       "You don't have permission to access this resource. Please check your Google My Business role.",
     "location-level access":
       "You have limited access. Some features may not be available with location-level permissions.",
 
-    // Sync errors
     "No Google connection found":
       "Please connect your Google My Business account first.",
     "Token refresh failed":
@@ -108,36 +100,31 @@ function getUserFriendlyErrorMessage(error: string): string {
     "No locations found":
       "No business locations were found. Please check your Google My Business account.",
 
-    // Generic improvements
     "Failed to sync data":
       "We couldn't sync your data right now. Please try again in a few minutes.",
     "Unknown error":
       "Something went wrong. Please try again or contact support if the issue persists.",
   }
 
-  // Check for exact matches first
   if (errorMappings[error]) {
     return errorMappings[error]
   }
 
-  // Check for partial matches
   for (const [key, message] of Object.entries(errorMappings)) {
     if (error.toLowerCase().includes(key.toLowerCase())) {
       return message
     }
   }
 
-  // Return a sanitized version of the original error if no mapping found
   return (
     error
-      .replace(/\b\d{3}\b/g, "") // Remove status codes
-      .replace(/Error:\s*/gi, "") // Remove "Error:" prefix
-      .replace(/\[.*?\]/g, "") // Remove bracketed technical details
+      .replace(/\b\d{3}\b/g, "")
+      .replace(/Error:\s*/gi, "")
+      .replace(/\[.*?\]/g, "")
       .trim() || "An unexpected error occurred. Please try again."
   )
 }
 
-// Helper function for exponential backoff retry
 async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
@@ -151,7 +138,6 @@ async function retryWithBackoff<T>(
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error))
 
-      // Don't retry on 4xx errors (client errors)
       if (
         error instanceof Response &&
         error.status >= 400 &&
@@ -160,21 +146,18 @@ async function retryWithBackoff<T>(
         throw lastError
       }
 
-      // If this is the last attempt, throw the error
       if (attempt === maxRetries - 1) {
         throw lastError
       }
 
-      // Calculate delay with exponential backoff and jitter
       const baseDelay = initialDelay * Math.pow(2, attempt)
-      const jitter = Math.random() * 0.3 * baseDelay // 30% jitter
+      const jitter = Math.random() * 0.3 * baseDelay
       const delay = Math.floor(baseDelay + jitter)
 
       console.log(
         `Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms delay. Error: ${lastError.message}`,
       )
 
-      // Wait before retrying
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
@@ -182,7 +165,6 @@ async function retryWithBackoff<T>(
   throw lastError || new Error("Retry failed")
 }
 
-// Orchestrated sync function that coordinates all sync operations
 async function orchestratedSync(
   supabase: unknown,
   tenantId: string,
@@ -210,12 +192,11 @@ async function orchestratedSync(
   }
 
   try {
-    // Ensure we have access to environment variables
+
     const env = privateEnv || (await import("$env/dynamic/private")).env
 
     console.log(`Starting ${syncType} sync for tenant ${tenantId}`)
 
-    // Get the active OAuth token for this tenant
     const { data: tokenData, error: tokenError } = await supabase
       .from("oauth_tokens")
       .select("id, encrypted_access_token, encrypted_refresh_token, expires_at")
@@ -236,10 +217,8 @@ async function orchestratedSync(
       }
     }
 
-    // Decrypt the access token (V2 schema stores encrypted tokens)
     const decryptedAccessToken = decryptToken(tokenData.encrypted_access_token)
 
-    // Step 1: Fetch account info
     console.log("Fetching account info for tenant", tenantId)
 
     try {
@@ -278,11 +257,10 @@ async function orchestratedSync(
       results.errors.push("Failed to fetch account info")
     }
 
-    // Step 2: Sync Google My Business data (locations and reviews) using V2 external integrator
     console.log("🔄 Starting comprehensive sync for tenant", tenantId)
 
     try {
-      // Call the comprehensive sync endpoint in v2-external-integrator
+
       const syncResponse = await retryWithBackoff(
         async () => {
           const response = await fetch(
@@ -315,7 +293,6 @@ async function orchestratedSync(
 
       console.log("Comprehensive sync completed:", syncResponse)
 
-      // Update results with sync data
       results.locationsSynced = syncResponse.locationsSynced || 0
       results.reviewsSynced = syncResponse.reviewsSynced || 0
 
@@ -329,7 +306,6 @@ async function orchestratedSync(
       )
     }
 
-    // Step 3: Sync location details (comprehensive data)
     if (results.locationsSynced > 0) {
       console.log("Syncing location details for tenant", tenantId)
 
@@ -373,7 +349,6 @@ async function orchestratedSync(
       }
     }
 
-    // Log final status
     const finalStatus = results.errors.length === 0 ? "completed" : "partial"
     console.log(`Sync ${finalStatus} for tenant ${tenantId}:`, results)
 
@@ -415,7 +390,6 @@ export const load: PageServerLoad = async ({
     redirect(303, "/account")
   }
 
-  // Debug: First check all tokens for this tenant
   const { data: allTenantTokens, error: allTokensError } =
     await supabaseServiceRole
       .from("oauth_tokens")
@@ -435,7 +409,6 @@ export const load: PageServerLoad = async ({
     })),
   })
 
-  // V2 Schema: Check if tenant has OAuth tokens (for detailed health display)
   const { data: oauthToken, error: tokenCheckError } = await supabaseServiceRole
     .from("oauth_tokens")
     .select(
@@ -444,10 +417,9 @@ export const load: PageServerLoad = async ({
     .eq("tenant_id", orgId)
     .eq("provider", "google")
     .eq("provider_scope", "https://www.googleapis.com/auth/business.manage")
-    .in("status", ["active", "refresh_failed", "expired"]) // Include failed tokens
+    .in("status", ["active", "refresh_failed", "expired"])
     .single()
 
-  // Connection detection based on oauth_tokens table
   const hasGoogleConnection = !tokenCheckError && !!oauthToken
 
   console.log(`[DEBUG] Token check for tenant ${orgId}:`, {
@@ -457,7 +429,6 @@ export const load: PageServerLoad = async ({
     error: tokenCheckError?.message,
   })
 
-  // Handle OAuth callback
   const code = url.searchParams.get("code")
   const state = url.searchParams.get("state")
   const error = url.searchParams.get("error")
@@ -474,7 +445,7 @@ export const load: PageServerLoad = async ({
   }
 
   if (code && state) {
-    // Verify state matches
+
     const expectedState = cookies.get("google_oauth_state")
     if (!expectedState || state !== expectedState) {
       return {
@@ -484,17 +455,15 @@ export const load: PageServerLoad = async ({
       }
     }
 
-    // Check if this is a reconnection (preserving data) or new connection
     const isReconnection = cookies.get("google_oauth_reconnect") === "true"
 
     try {
-      // Handle OAuth callback
+
       const redirectUrl = url.origin + "/account/integrations"
       console.log(
         `OAuth callback - orgId: ${orgId}, userId: ${user.id}, redirectUrl: ${redirectUrl}, isReconnection: ${isReconnection}`,
       )
 
-      // Exchange code for tokens
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: {
@@ -518,7 +487,6 @@ export const load: PageServerLoad = async ({
 
       const tokens = await tokenResponse.json()
 
-      // First check if a token already exists for this tenant/provider/scope
       const { data: existingToken } = await supabaseServiceRole
         .from("oauth_tokens")
         .select("id")
@@ -530,7 +498,7 @@ export const load: PageServerLoad = async ({
       let tokenStoreResult, insertError
 
       if (existingToken) {
-        // Update existing token - reset status to active on successful reconnection
+
         const { data, error } = await supabaseServiceRole
           .from("oauth_tokens")
           .update({
@@ -540,10 +508,10 @@ export const load: PageServerLoad = async ({
             expires_at: new Date(
               Date.now() + tokens.expires_in * 1000,
             ).toISOString(),
-            status: "active", // Reset to active on successful OAuth
-            refresh_attempts: 0, // Reset retry counter
+            status: "active",
+            refresh_attempts: 0,
             last_refresh_at: null,
-            last_refresh_error: null, // Clear any previous errors
+            last_refresh_error: null,
             token_metadata: {
               oauth_scopes: [
                 "https://www.googleapis.com/auth/business.manage",
@@ -553,7 +521,7 @@ export const load: PageServerLoad = async ({
               token_type: "Bearer",
               connected_at: new Date().toISOString(),
               is_reconnection: isReconnection,
-              previous_status: existingToken.status, // Track what status was before
+              previous_status: existingToken.status,
             },
             updated_at: new Date().toISOString(),
           })
@@ -564,7 +532,7 @@ export const load: PageServerLoad = async ({
         tokenStoreResult = data
         insertError = error
       } else {
-        // Insert new token
+
         const { data, error } = await supabaseServiceRole
           .from("oauth_tokens")
           .insert({
@@ -601,7 +569,6 @@ export const load: PageServerLoad = async ({
         throw new Error(`Failed to store OAuth tokens: ${insertError.message}`)
       }
 
-      // Verify tokens were stored successfully
       const { data: verifyTokens, error: verifyError } =
         await supabaseServiceRole
           .from("oauth_tokens")
@@ -622,12 +589,9 @@ export const load: PageServerLoad = async ({
         tokenId: tokenStoreResult?.id,
       })
 
-      // Clear state cookies
       cookies.delete("google_oauth_state", { path: "/" })
       cookies.delete("google_oauth_reconnect", { path: "/" })
 
-      // Check if this is a new user's first connection (for onboarding)
-      // Skip onboarding if this is a reconnection
       const { data: tenant } = await supabaseServiceRole
         .from("tenants")
         .select("onboarding_completed")
@@ -636,7 +600,6 @@ export const load: PageServerLoad = async ({
 
       const isFirstConnection = !isReconnection && !tenant?.onboarding_completed
 
-      // Trigger orchestrated sync after successful OAuth connection
       try {
         console.log(
           `Triggering direct sync for tenant ${orgId} after OAuth connection`,
@@ -657,10 +620,9 @@ export const load: PageServerLoad = async ({
         }
       } catch (syncError) {
         console.error("Error during immediate sync after OAuth:", syncError)
-        // Don't fail the OAuth flow if sync fails - user can manually sync later
+
       }
 
-      // Start customer onboarding workflow for new users
       if (isFirstConnection) {
         try {
           console.log(
@@ -690,14 +652,12 @@ export const load: PageServerLoad = async ({
           console.error("Error starting onboarding workflow:", workflowError)
         }
 
-        // Redirect to onboarding for new users
         redirect(303, "/account/onboarding")
       }
 
-      // Redirect to clear URL parameters and show success for existing users
       redirect(303, "/account/integrations?success=true")
     } catch (err) {
-      // Re-throw redirects (they're not errors)
+
       if (
         err &&
         typeof err === "object" &&
@@ -708,7 +668,7 @@ export const load: PageServerLoad = async ({
       }
 
       console.error("Error exchanging OAuth code:", err)
-      // Clear state cookies on error
+
       cookies.delete("google_oauth_state", { path: "/" })
       cookies.delete("google_oauth_reconnect", { path: "/" })
 
@@ -723,7 +683,6 @@ export const load: PageServerLoad = async ({
     }
   }
 
-  // V2 Schema: Get locations (without OAuth tokens, which are in oauth_tokens table)
   const accessibleLocations = await supabaseServiceRole
     .from("locations")
     .select(
@@ -741,13 +700,13 @@ export const load: PageServerLoad = async ({
 
   if (hasGoogleConnection) {
     try {
-      // Check if token needs refresh
+
       const tokenExpired = oauthToken.expires_at
         ? new Date(oauthToken.expires_at) < new Date()
         : true
 
       if (tokenExpired) {
-        // Get refresh token for token refresh
+
         const { data: refreshTokenData } = await supabaseServiceRole
           .from("oauth_tokens")
           .select("encrypted_refresh_token")
@@ -755,7 +714,7 @@ export const load: PageServerLoad = async ({
           .single()
 
         if (refreshTokenData?.encrypted_refresh_token) {
-          // Refresh the token
+
           const refreshResponse = await fetch(
             "https://oauth2.googleapis.com/token",
             {
@@ -781,7 +740,6 @@ export const load: PageServerLoad = async ({
           if (refreshResponse.ok) {
             const newTokens = await refreshResponse.json()
 
-            // Update the OAuth token with new access token
             await supabaseServiceRole
               .from("oauth_tokens")
               .update({
@@ -799,8 +757,6 @@ export const load: PageServerLoad = async ({
         }
       }
 
-      // For now, we'll use the locations from the database
-      // In production, you'd make actual GMB API calls here
       businessAccounts = []
       invitations = []
     } catch (err) {
@@ -810,7 +766,6 @@ export const load: PageServerLoad = async ({
     }
   }
 
-  // Get review counts for each location to show sync status
   let locationReviewCounts: Record<string, number> = {}
   let lastSyncTime: string | null = null
   if (hasGoogleConnection) {
@@ -829,7 +784,6 @@ export const load: PageServerLoad = async ({
       )
     }
 
-    // Get last sync time from locations
     const { data: lastSync } = await supabaseServiceRole
       .from("locations")
       .select("last_sync_at")
@@ -842,7 +796,6 @@ export const load: PageServerLoad = async ({
     lastSyncTime = lastSync?.last_sync_at || null
   }
 
-  // V2 Schema: Enhanced token health check using oauth_tokens table
   let tokenHealth = null
   if (hasGoogleConnection && oauthToken) {
     const expiresAt = oauthToken.expires_at
@@ -859,7 +812,6 @@ export const load: PageServerLoad = async ({
     const lastRefreshed = oauthToken.last_refresh_at
     const scopes = tokenMetadata.oauth_scopes || []
 
-    // Get refresh token availability
     const { data: refreshTokenData } = await supabaseServiceRole
       .from("oauth_tokens")
       .select("encrypted_refresh_token")
@@ -868,7 +820,6 @@ export const load: PageServerLoad = async ({
 
     const errors: string[] = []
 
-    // Check for refresh_failed status first
     if (oauthToken.status === "refresh_failed") {
       errors.push("Token refresh failed - re-authentication required")
       if (oauthToken.last_refresh_error) {
@@ -950,7 +901,7 @@ export const actions: Actions = {
     }
 
     try {
-      // Reset the token status to active to allow retry
+
       const { data, error } = await supabaseServiceRole
         .from("oauth_tokens")
         .update({
@@ -997,20 +948,18 @@ export const actions: Actions = {
         return fail(500, { error: "Google Client ID not configured" })
       }
 
-      // Generate random state for CSRF protection
       const state = crypto.randomUUID()
       cookies.set("google_oauth_state", state, {
         path: "/",
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 10, // 10 minutes
+        maxAge: 60 * 10,
       })
 
       const url = new URL(request.url)
       const redirectUri = `${url.origin}/account/integrations`
 
-      // Build OAuth URL
       const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth")
       authUrl.searchParams.append("client_id", clientId)
       authUrl.searchParams.append("redirect_uri", redirectUri)
@@ -1027,7 +976,6 @@ export const actions: Actions = {
       authUrl.searchParams.append("access_type", "offline")
       authUrl.searchParams.append("prompt", "consent")
 
-      // Return the redirect URL instead of using redirect() in an action
       return { redirect: authUrl.toString() }
     } catch (error) {
       console.error("connectGoogle error:", error)
@@ -1067,10 +1015,8 @@ export const actions: Actions = {
         `Starting Google My Business disconnect for organization ${orgId}`,
       )
 
-      // Start a transaction for comprehensive cleanup
       const cleanupOperations = []
 
-      // 1. Clean up response queue
       const { error: queueError } = await supabaseServiceRole
         .from("response_queue")
         .delete()
@@ -1083,7 +1029,6 @@ export const actions: Actions = {
         cleanupOperations.push("response_queue: cleaned")
       }
 
-      // 2. Clean up response analytics
       const { error: analyticsError } = await supabaseServiceRole
         .from("response_analytics")
         .delete()
@@ -1096,7 +1041,6 @@ export const actions: Actions = {
         cleanupOperations.push("response_analytics: cleaned")
       }
 
-      // 3. Clean up response settings
       const { error: settingsError } = await supabaseServiceRole
         .from("response_settings")
         .delete()
@@ -1109,7 +1053,6 @@ export const actions: Actions = {
         cleanupOperations.push("response_settings: cleaned")
       }
 
-      // 4. Clean up batch generation jobs
       const { error: batchJobsError } = await supabaseServiceRole
         .from("batch_generation_jobs")
         .delete()
@@ -1122,7 +1065,6 @@ export const actions: Actions = {
         cleanupOperations.push("batch_generation_jobs: cleaned")
       }
 
-      // 5. Clean up AI responses
       const { error: aiResponsesError } = await supabaseServiceRole
         .from("ai_responses")
         .delete()
@@ -1135,7 +1077,6 @@ export const actions: Actions = {
         cleanupOperations.push("ai_responses: cleaned")
       }
 
-      // 6. Clean up reviews (Google platform only to preserve other review sources)
       const { error: reviewsError } = await supabaseServiceRole
         .from("reviews")
         .delete()
@@ -1149,7 +1090,6 @@ export const actions: Actions = {
         cleanupOperations.push("google_reviews: cleaned")
       }
 
-      // 7. Clean up OAuth tokens
       const { error: oauthTokensError } = await supabaseServiceRole
         .from("oauth_tokens")
         .delete()
@@ -1170,7 +1110,7 @@ export const actions: Actions = {
 
       redirect(303, "/account/integrations?disconnected=true")
     } catch (error) {
-      // Re-throw redirects (they're not errors)
+
       if (
         error &&
         typeof error === "object" &&
@@ -1205,7 +1145,7 @@ export const actions: Actions = {
     }
 
     try {
-      // Get the OAuth token for this tenant
+
       const { data: oauthToken } = await supabaseServiceRole
         .from("oauth_tokens")
         .select("id, encrypted_refresh_token")
@@ -1218,7 +1158,6 @@ export const actions: Actions = {
         return fail(400, { error: "No Google connection found" })
       }
 
-      // Refresh the token
       const refreshResponse = await fetch(
         "https://oauth2.googleapis.com/token",
         {
@@ -1249,7 +1188,6 @@ export const actions: Actions = {
 
       const newTokens = await refreshResponse.json()
 
-      // V2 Schema: Update the OAuth token with new access token
       await supabaseServiceRole
         .from("oauth_tokens")
         .update({
@@ -1276,8 +1214,7 @@ export const actions: Actions = {
   },
 
   reconnectGoogle: async ({ cookies, request }) => {
-    // This is similar to connectGoogle but specifically for re-authentication
-    // It keeps the existing data and just updates the tokens
+
     try {
       const clientId =
         PUBLIC_GOOGLE_CLIENT_ID ||
@@ -1289,29 +1226,26 @@ export const actions: Actions = {
         return fail(500, { error: "Google Client ID not configured" })
       }
 
-      // Generate random state for CSRF protection
       const state = crypto.randomUUID()
       cookies.set("google_oauth_state", state, {
         path: "/",
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 10, // 10 minutes
+        maxAge: 60 * 10,
       })
 
-      // Set a flag to indicate this is a reconnection, not a new connection
       cookies.set("google_oauth_reconnect", "true", {
         path: "/",
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 60 * 10, // 10 minutes
+        maxAge: 60 * 10,
       })
 
       const url = new URL(request.url)
       const redirectUri = `${url.origin}/account/integrations`
 
-      // Build OAuth URL
       const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth")
       authUrl.searchParams.append("client_id", clientId)
       authUrl.searchParams.append("redirect_uri", redirectUri)
@@ -1326,9 +1260,8 @@ export const actions: Actions = {
       )
       authUrl.searchParams.append("state", state)
       authUrl.searchParams.append("access_type", "offline")
-      authUrl.searchParams.append("prompt", "consent") // Force re-consent to get new refresh token
+      authUrl.searchParams.append("prompt", "consent")
 
-      // Return the redirect URL instead of using redirect() in an action
       return { redirect: authUrl.toString() }
     } catch (error) {
       console.error("reconnectGoogle error:", error)

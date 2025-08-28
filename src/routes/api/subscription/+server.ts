@@ -19,7 +19,6 @@ export const GET: RequestHandler = async ({
       error(401, "Unauthorized")
     }
 
-    // Get customer ID
     const { error: customerError, customerId } = await getOrCreateCustomerId({
       supabaseServiceRole,
       user,
@@ -30,7 +29,6 @@ export const GET: RequestHandler = async ({
       error(500, "Unable to retrieve customer information")
     }
 
-    // Get subscription details
     const subscriptionResult = await fetchSubscription({ customerId })
 
     if (subscriptionResult.error) {
@@ -38,14 +36,13 @@ export const GET: RequestHandler = async ({
       error(500, "Unable to retrieve subscription details")
     }
 
-    // Get payment methods
     const { paymentMethods, error: pmError } = await listPaymentMethods({
       customerId,
     })
 
     if (pmError) {
       console.error("Error fetching payment methods:", pmError)
-      // Don't fail the request, just log the error
+
     }
 
     return json({
@@ -71,7 +68,6 @@ export const POST: RequestHandler = async ({
 
     const { action, ...params } = await request.json()
 
-    // Get customer ID
     const { error: customerError, customerId } = await getOrCreateCustomerId({
       supabaseServiceRole,
       user,

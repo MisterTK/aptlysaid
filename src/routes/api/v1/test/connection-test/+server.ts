@@ -13,18 +13,15 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
       return json({ error: "No tenant selected" }, { status: 400 })
     }
 
-    // Test 1: Raw query without any filters
     const { data: allTokens, error: allError } =
       await locals.supabaseServiceRole.from("oauth_tokens").select("*")
 
-    // Test 2: Filter by tenant only
     const { data: tenantTokens, error: tenantError } =
       await locals.supabaseServiceRole
         .from("oauth_tokens")
         .select("*")
         .eq("tenant_id", tenantId)
 
-    // Test 3: The exact production query
     const { data: productionQuery, error: prodError } =
       await locals.supabaseServiceRole
         .from("oauth_tokens")
@@ -35,7 +32,6 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
         .eq("status", "active")
         .single()
 
-    // Test 4: Check if it's a case sensitivity or whitespace issue
     const { data: caseTest } = await locals.supabaseServiceRole
       .from("oauth_tokens")
       .select("*")

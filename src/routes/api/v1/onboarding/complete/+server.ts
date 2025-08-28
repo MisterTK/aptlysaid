@@ -17,13 +17,12 @@ export const POST: RequestHandler = async ({
   }
 
   try {
-    // Create v2 API client
+
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    // Mark onboarding as completed
     const { progress } = await v2Client.advanceOnboarding(
       "onboarding_completed",
       {
@@ -33,8 +32,6 @@ export const POST: RequestHandler = async ({
       },
     )
 
-    // Update tenant onboarding status directly
-    // This is a temporary workaround until we have a dedicated endpoint
     const { error: updateError } = await supabase
       .from("tenants")
       .update({
@@ -46,7 +43,7 @@ export const POST: RequestHandler = async ({
 
     if (updateError) {
       console.error("Error updating tenant onboarding status:", updateError)
-      // Continue anyway as the event was recorded
+
     }
 
     return json({

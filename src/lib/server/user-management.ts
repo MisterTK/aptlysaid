@@ -32,9 +32,6 @@ export class UserManagementService {
     private supabaseServiceRole?: SupabaseClient<Database>,
   ) {}
 
-  /**
-   * Check if user has permission to perform action
-   */
   async checkPermission(
     userId: string,
     tenantId: string,
@@ -53,9 +50,6 @@ export class UserManagementService {
     return roles.includes(member.role as UserRole)
   }
 
-  /**
-   * Get user's role in tenant
-   */
   async getUserRole(
     userId: string,
     tenantId: string,
@@ -78,31 +72,22 @@ export class UserManagementService {
     return (member?.role as UserRole) || null
   }
 
-  /**
-   * Check if user can manage another user (role hierarchy)
-   */
   canManageRole(managerRole: UserRole, targetRole: UserRole): boolean {
-    // Owners can manage everyone except other owners
+
     if (managerRole === "owner") {
       return targetRole !== "owner"
     }
 
-    // Admins can manage managers and members
     if (managerRole === "admin") {
       return ["manager", "member"].includes(targetRole)
     }
 
-    // Managers and members cannot manage anyone
     return false
   }
 
-  /**
-   * Get all team members for a tenant
-   */
   async getTeamMembers(tenantId: string): Promise<TeamMember[]> {
     console.log("getTeamMembers - Starting query for tenant:", tenantId)
 
-    // Get tenant members first
     const { data, error: queryError } = await this.supabase
       .from("tenant_users")
       .select("user_id, role, created_at")
@@ -119,7 +104,6 @@ export class UserManagementService {
     const userIds = data.map((member) => member.user_id)
     console.log("getTeamMembers - Getting profiles for user IDs:", userIds)
 
-    // Get profiles separately
     const { data: profilesData, error: profilesError } = await this.supabase
       .from("profiles")
       .select("id, full_name, avatar_url")
@@ -130,7 +114,6 @@ export class UserManagementService {
       error: profilesError,
     })
 
-    // Create profile map
     const profilesMap = new Map()
     if (profilesData) {
       profilesData.forEach((profile) => {
@@ -138,7 +121,6 @@ export class UserManagementService {
       })
     }
 
-    // Get user emails from auth.users using service role client
     console.log("getTeamMembers - Getting emails for user IDs:", userIds)
 
     if (!this.supabaseServiceRole) {
@@ -169,7 +151,7 @@ export class UserManagementService {
 
     if (authError) {
       console.error("Error fetching user emails:", authError)
-      // Fallback to placeholder emails instead of throwing error
+
       console.log(
         "getTeamMembers - Falling back to placeholder emails due to auth error",
       )
@@ -212,9 +194,6 @@ export class UserManagementService {
     return result
   }
 
-  /**
-   * Get pending invitations for a tenant
-   */
   async getPendingInvitations(tenantId: string): Promise<PendingInvitation[]> {
     const { data, error: queryError } = await this.supabase
       .from("tenant_invitations")
@@ -259,9 +238,6 @@ export class UserManagementService {
     }))
   }
 
-  /**
-   * Invite a user to a tenant
-   */
   async inviteUser(
     tenantId: string,
     email: string,
@@ -269,7 +245,7 @@ export class UserManagementService {
     invitedBy: string,
     baseUrl: string,
   ): Promise<void> {
-    // Check if user is already a member
+
     const { data: existingMember } = await this.supabase.auth.admin.listUsers()
     const existingUser = existingMember.users.find(
       (user) => user.email === email,
@@ -288,7 +264,6 @@ export class UserManagementService {
       }
     }
 
-    // Check for existing pending invitation
     const { data: existingInvitation } = await this.supabase
       .from("tenant_invitations")
       .select("id")
@@ -302,10 +277,8 @@ export class UserManagementService {
       throw error(400, "User already has a pending invitation")
     }
 
-    // Generate invitation token
     const token = generateInvitationToken()
 
-    // Create invitation
     const { error: insertError } = await this.supabase
       .from("tenant_invitations")
       .insert({
@@ -321,7 +294,6 @@ export class UserManagementService {
       throw error(500, "Failed to create invitation")
     }
 
-    // Get tenant and inviter details for email
     const { data: tenantData } = await this.supabase
       .from("tenants")
       .select("name")
@@ -334,7 +306,6 @@ export class UserManagementService {
       .eq("id", invitedBy)
       .single()
 
-    // Send invitation email
     const invitationUrl = `${baseUrl}/invitation/${token}`
 
     const emailBody = `
@@ -354,9 +325,6 @@ export class UserManagementService {
     )
   }
 
-  /**
-   * Cancel an invitation
-   */
   async cancelInvitation(invitationId: string): Promise<void> {
     const { error: updateError } = await this.supabase
       .from("tenant_invitations")
@@ -369,11 +337,8 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Accept an invitation by token
-   */
   async acceptInvitation(token: string, userId: string): Promise<string> {
-    // Get invitation details
+
     const { data: invitation, error: invitationError } = await this.supabase
       .from("tenant_invitations")
       .select("*")
@@ -386,7 +351,6 @@ export class UserManagementService {
       throw error(400, "Invalid or expired invitation")
     }
 
-    // Check if user is already a member
     const { data: existingMember } = await this.supabase
       .from("tenant_users")
       .select("user_id")
@@ -395,13 +359,11 @@ export class UserManagementService {
       .single()
 
     if (existingMember) {
-      // If user is already a member, just return the tenant ID
-      // This handles race conditions where invitation gets processed twice
+
       console.log("User already a member, returning tenant ID")
       return invitation.tenant_id
     }
 
-    // Add user to tenant
     const { error: memberError } = await this.supabase
       .from("tenant_users")
       .insert({
@@ -415,7 +377,6 @@ export class UserManagementService {
       throw error(500, "Failed to join tenant")
     }
 
-    // Mark invitation as accepted
     const { error: updateError } = await this.supabase
       .from("tenant_invitations")
       .update({
@@ -431,16 +392,13 @@ export class UserManagementService {
     return invitation.tenant_id
   }
 
-  /**
-   * Update a user's role
-   */
   async updateUserRole(
     userId: string,
     tenantId: string,
     newRole: UserRole,
     updatedBy: string,
   ): Promise<void> {
-    // Get current user role for validation
+
     const { data: currentMember } = await this.supabase
       .from("tenant_users")
       .select("role")
@@ -452,13 +410,11 @@ export class UserManagementService {
       throw error(404, "User is not a member of this tenant")
     }
 
-    // Get updater's role
     const updaterRole = await this.getUserRole(updatedBy, tenantId)
     if (!updaterRole) {
       throw error(403, "You are not a member of this tenant")
     }
 
-    // Check if updater can manage this role change
     if (!this.canManageRole(updaterRole, currentMember.role as UserRole)) {
       throw error(403, "You do not have permission to modify this user")
     }
@@ -467,7 +423,6 @@ export class UserManagementService {
       throw error(403, "You do not have permission to assign this role")
     }
 
-    // Prevent changing the last owner
     if (currentMember.role === "owner" && newRole !== "owner") {
       const { data: ownerCount } = await this.supabase
         .from("tenant_users")
@@ -480,7 +435,6 @@ export class UserManagementService {
       }
     }
 
-    // Update role
     const { error: updateError } = await this.supabase
       .from("tenant_users")
       .update({ role: newRole })
@@ -493,15 +447,12 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Remove a user from tenant
-   */
   async removeUser(
     userId: string,
     tenantId: string,
     removedBy: string,
   ): Promise<void> {
-    // Get current user role for validation
+
     const { data: currentMember } = await this.supabase
       .from("tenant_users")
       .select("role")
@@ -513,18 +464,15 @@ export class UserManagementService {
       throw error(404, "User is not a member of this tenant")
     }
 
-    // Get remover's role
     const removerRole = await this.getUserRole(removedBy, tenantId)
     if (!removerRole) {
       throw error(403, "You are not a member of this tenant")
     }
 
-    // Check if remover can manage this user
     if (!this.canManageRole(removerRole, currentMember.role as UserRole)) {
       throw error(403, "You do not have permission to remove this user")
     }
 
-    // Prevent removing the last owner
     if (currentMember.role === "owner") {
       const { data: ownerCount } = await this.supabase
         .from("tenant_users")
@@ -537,7 +485,6 @@ export class UserManagementService {
       }
     }
 
-    // Remove user
     const { error: deleteError } = await this.supabase
       .from("tenant_users")
       .delete()
@@ -550,27 +497,22 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Transfer ownership to another user
-   */
   async transferOwnership(
     currentOwnerId: string,
     newOwnerId: string,
     tenantId: string,
   ): Promise<void> {
-    // Validate current owner
+
     const currentOwnerRole = await this.getUserRole(currentOwnerId, tenantId)
     if (currentOwnerRole !== "owner") {
       throw error(403, "Only the current owner can transfer ownership")
     }
 
-    // Validate new owner is a member
     const newOwnerRole = await this.getUserRole(newOwnerId, tenantId)
     if (!newOwnerRole) {
       throw error(400, "New owner must be a member of the tenant")
     }
 
-    // Use a transaction to update both users atomically
     const { error: currentOwnerError } = await this.supabase
       .from("tenant_users")
       .update({ role: "admin" })
@@ -588,7 +530,7 @@ export class UserManagementService {
       .eq("tenant_id", tenantId)
 
     if (newOwnerError) {
-      // Rollback the first update
+
       await this.supabase
         .from("tenant_users")
         .update({ role: "owner" })
@@ -600,9 +542,6 @@ export class UserManagementService {
   }
 }
 
-/**
- * Permission helper functions for use in API routes
- */
 export async function requirePermission(
   supabase: SupabaseClient<Database>,
   userId: string,

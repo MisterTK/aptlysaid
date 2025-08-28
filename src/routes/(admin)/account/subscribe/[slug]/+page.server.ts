@@ -17,11 +17,10 @@ export const load: PageServerLoad = async ({
   }
 
   if (params.slug === "free_plan") {
-    // plan with no stripe_price_id. Redirect to account home
+
     redirect(303, "/account")
   }
 
-  // Get or create Stripe customer
   const { error: idError, customerId } = await getOrCreateCustomerId({
     supabaseServiceRole,
     user,
@@ -35,7 +34,6 @@ export const load: PageServerLoad = async ({
     })
   }
 
-  // Check if user already has an active subscription
   const { primarySubscription, error: subscriptionError } =
     await fetchSubscription({
       customerId,
@@ -52,11 +50,10 @@ export const load: PageServerLoad = async ({
     primarySubscription &&
     (primarySubscription.isActive || primarySubscription.isTrialing)
   ) {
-    // User already has an active plan
+
     redirect(303, "/account/billing")
   }
 
-  // Create modern checkout session with enhanced features
   const { session: checkoutSession, error: checkoutError } =
     await createCheckoutSession({
       customerId,

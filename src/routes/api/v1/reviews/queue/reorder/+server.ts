@@ -19,7 +19,6 @@ export const PATCH: RequestHandler = async ({
   try {
     const { fromIndex, toIndex } = await request.json()
 
-    // Get all queue items in order
     const { data: queueItems, error: fetchError } = await supabaseServiceRole
       .from("response_queue")
       .select("*")
@@ -29,18 +28,15 @@ export const PATCH: RequestHandler = async ({
 
     if (fetchError || !queueItems) throw fetchError
 
-    // Reorder in memory
     const item = queueItems[fromIndex]
     queueItems.splice(fromIndex, 1)
     queueItems.splice(toIndex, 0, item)
 
-    // Update queue order using a simple approach since position column doesn't exist
-    // We'll use the updated_at timestamp to maintain order
     for (let i = 0; i < queueItems.length; i++) {
       const { error } = await supabaseServiceRole
         .from("response_queue")
         .update({
-          updated_at: new Date(Date.now() + i * 1000).toISOString(), // Stagger timestamps by 1 second
+          updated_at: new Date(Date.now() + i * 1000).toISOString(),
         })
         .eq("id", queueItems[i].id)
         .eq("tenant_id", tenantId)
