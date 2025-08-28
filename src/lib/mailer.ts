@@ -1,5 +1,4 @@
 import { Resend } from "resend"
-import { env } from "$env/dynamic/private"
 import { createClient, type User } from "@supabase/supabase-js"
 import Handlebars from "handlebars"
 import type { TemplateDelegate } from "handlebars"
@@ -139,7 +138,7 @@ export async function sendEmail(
   htmlBody?: string,
   from?: string,
 ): Promise<void> {
-  if (!env.PRIVATE_RESEND_API_KEY) {
+  if (!process.env.PRIVATE_RESEND_API_KEY) {
     console.log(
       "WARN: PRIVATE_RESEND_API_KEY not set, skipping email send to",
       to,
@@ -148,7 +147,7 @@ export async function sendEmail(
   }
 
   const to_emails = Array.isArray(to) ? to : [to]
-  const from_email = from || env.PRIVATE_FROM_ADMIN_EMAIL || "admin@localhost"
+  const from_email = from || process.env.PRIVATE_FROM_ADMIN_EMAIL || "admin@localhost"
 
   console.log(
     `Sending email | To: ${to_emails.join(", ")} | Subject: ${subject}`,
@@ -174,7 +173,7 @@ export async function sendEmail(
       email.html = htmlBody
     }
 
-    const resend = new Resend(env.PRIVATE_RESEND_API_KEY)
+    const resend = new Resend(process.env.PRIVATE_RESEND_API_KEY)
     const resp = await resend.emails.send(
       email as unknown as Parameters<typeof resend.emails.send>[0],
     )

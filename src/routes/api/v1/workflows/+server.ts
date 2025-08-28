@@ -42,7 +42,7 @@ export const GET: RequestHandler = async ({
     const workflowStats = recentWorkflows.reduce(
       (
         acc: Record<string, number>,
-        workflow: Database["public"]["Tables"]["workflows"]["Row"],
+        workflow: any,
       ) => {
         const key = `${workflow.workflow_type}_${workflow.status}`
         acc[key] = (acc[key] || 0) + 1

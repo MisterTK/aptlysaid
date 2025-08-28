@@ -37,7 +37,6 @@ export default defineConfig({
   esbuild: {
     tsconfigRaw: {
       compilerOptions: {
-        skipLibCheck: true,
       },
     },
   },

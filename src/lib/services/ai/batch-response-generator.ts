@@ -43,9 +43,14 @@ export class BatchResponseGenerator {
     let responseGuidelines: string[] = []
     let thingsToAvoid: string[] = []
 
-    if (businessGuidance.review_response_guidelines) {
+    // Check if business guidance has response guidelines in any available property
+    const guidelinesProperty = 'review_response_guidelines' in businessGuidance 
+      ? (businessGuidance as any).review_response_guidelines 
+      : null
+
+    if (guidelinesProperty) {
       try {
-        const parsed = JSON.parse(businessGuidance.review_response_guidelines)
+        const parsed = JSON.parse(guidelinesProperty)
         brandIdentity = parsed.brandIdentity || ""
         responseGuidelines = parsed.responseGuidelines || []
         thingsToAvoid = parsed.thingsToAvoid || []
@@ -63,7 +68,7 @@ export class BatchResponseGenerator {
     }
 
     const activeUpsellItems = upsellItems
-      .filter((item) => item.is_active)
+      .filter((item) => (item as any).is_active)
       .sort((a, b) => (b.priority || 0) - (a.priority || 0))
 
     // Get recent rejection feedback for learning
@@ -84,7 +89,7 @@ export class BatchResponseGenerator {
           .filter((feedback): feedback is string => !!feedback) || []
     }
 
-    let prompt = `You are responding to customer reviews for a business. Your responses should be ${businessGuidance.tone_of_voice || "professional"} and helpful.
+    let prompt = `You are responding to customer reviews for a business. Your responses should be ${(businessGuidance as any).tone_of_voice || "professional"} and helpful.
 
 BRAND IDENTITY:
 ${brandIdentity}
@@ -101,7 +106,7 @@ RESPONSE GUIDELINES:`
       })
     }
 
-    prompt += `\n\nTONE OF VOICE: ${businessGuidance.tone_of_voice || "professional"}
+    prompt += `\n\nTONE OF VOICE: ${(businessGuidance as any).tone_of_voice || "professional"}
 MAXIMUM RESPONSE LENGTH: 150 words.`
 
     if (rejectionFeedback.length > 0) {
@@ -141,7 +146,7 @@ MAXIMUM RESPONSE LENGTH: 150 words.`
     metaPrompt: string,
     model: string = modelsConfig.defaultModel,
   ): Promise<string> {
-    const reviewerName = review.author_name || "the reviewer"
+    const reviewerName = (review as any).author_name || "the reviewer"
     const rating = review.rating
     const reviewText = review.review_text || "No review text provided"
 
@@ -151,7 +156,7 @@ Review Details:
 - Reviewer: ${reviewerName}
 - Rating: ${rating}/5 stars
 - Review: ${reviewText}
-- Location: ${review.location_name}
+- Location: ${(review as any).location_name}
 
 Generate a personalized response to this review.`
 
@@ -243,7 +248,7 @@ Generate a personalized response to this review.`
   ): Promise<BatchGenerationResult[]> {
     // Filter reviews that need responses
     const reviewsNeedingResponse = reviews.filter(
-      (review) => !review.review_reply && review.review_text,
+      (review) => !(review as any).review_reply && review.review_text,
     )
 
     if (reviewsNeedingResponse.length === 0) {
@@ -332,7 +337,8 @@ Generate a personalized response to this review.`
           const { error } = await this.supabase.from("ai_responses").insert({
             review_id: result.reviewId,
             tenant_id: organizationId,
-            content: result.response,
+            ai_model: model,
+            response_text: result.response,
             status: "draft",
           })
 

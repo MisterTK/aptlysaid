@@ -87,9 +87,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const { data: item, error } = await adminClient
       .from("upsell_items")
       .insert({
-        name,
-        description,
+        call_to_action: name,
+        promotion_text: description,
         priority,
+        tenant_id: session.user.tenant_id || "",
       })
       .select()
       .single()

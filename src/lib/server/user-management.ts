@@ -247,10 +247,10 @@ export class UserManagementService {
       email: invitation.email,
       role: invitation.role as UserRole,
       invited_by: invitation.invited_by,
-      invited_by_name: invitation.inviter?.full_name || null,
+      invited_by_name: (invitation.inviter && typeof invitation.inviter === 'object' && 'full_name' in invitation.inviter) ? (invitation.inviter as any).full_name : null,
       created_at: invitation.created_at,
       expires_at: invitation.expires_at,
-      status: invitation.status,
+      status: invitation.status || "pending",
     }))
   }
 
@@ -332,18 +332,21 @@ export class UserManagementService {
     // Send invitation email
     const invitationUrl = `${baseUrl}/invitation/${token}`
 
-    await sendEmail({
-      to: email,
-      subject: `You're invited to join ${tenantData?.name || "AptlySaid"}`,
-      template: "team-invitation",
-      data: {
-        tenantName: tenantData?.name || "AptlySaid",
-        inviterName: inviterData?.full_name || "A team member",
-        role: role,
-        invitationUrl,
-        expiresIn: "7 days",
-      },
-    })
+    const emailBody = `
+    You've been invited to join ${tenantData?.name || "AptlySaid"} as a ${role}.
+    
+    Invited by: ${inviterData?.full_name || "A team member"}
+    
+    Click here to accept your invitation: ${invitationUrl}
+    
+    This invitation expires in 7 days.
+    `
+
+    await sendEmail(
+      email,
+      `You're invited to join ${tenantData?.name || "AptlySaid"}`,
+      emailBody,
+    )
   }
 
   /**

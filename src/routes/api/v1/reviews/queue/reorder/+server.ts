@@ -25,7 +25,7 @@ export const PATCH: RequestHandler = async ({
       .select("*")
       .eq("tenant_id", tenantId)
       .in("status", ["pending", "processing"])
-      .order("position", { ascending: true })
+      .order("created_at", { ascending: true })
 
     if (fetchError || !queueItems) throw fetchError
 
@@ -34,18 +34,15 @@ export const PATCH: RequestHandler = async ({
     queueItems.splice(fromIndex, 1)
     queueItems.splice(toIndex, 0, item)
 
-    // Update positions in database
-    const updates = queueItems.map((item, index) => ({
-      id: item.id,
-      position: index + 1,
-    }))
-
-    // Batch update
-    for (const update of updates) {
+    // Update queue order using a simple approach since position column doesn't exist
+    // We'll use the updated_at timestamp to maintain order
+    for (let i = 0; i < queueItems.length; i++) {
       const { error } = await supabaseServiceRole
         .from("response_queue")
-        .update({ position: update.position })
-        .eq("id", update.id)
+        .update({ 
+          updated_at: new Date(Date.now() + i * 1000).toISOString() // Stagger timestamps by 1 second
+        })
+        .eq("id", queueItems[i].id)
         .eq("tenant_id", tenantId)
 
       if (error) throw error

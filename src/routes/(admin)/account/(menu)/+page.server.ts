@@ -1,8 +1,9 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { GoogleMyBusinessWrapperV3 } from "$lib/services/google-my-business-wrapper-v2"
-import { env as publicEnv } from "$env/dynamic/public"
-import { env as privateEnv } from "$env/dynamic/private"
+// Use Node.js environment variables instead of SvelteKit env imports
+const publicEnv = process.env
+const privateEnv = process.env
 
 export const load: PageServerLoad = async ({
   locals: { safeGetSession, supabaseServiceRole },

@@ -49,7 +49,13 @@ export async function syncUnansweredReviews() {
         encryptionKey: process.env.TOKEN_ENCRYPTION_KEY!,
       })
 
-      const locations = await gmb.getAllAccessibleLocations(org.tenant_id!)
+      // Get all accounts and then all locations for each account
+      const accounts = await gmb.listAccounts(org.tenant_id!)
+      let locations: any[] = []
+      for (const account of accounts) {
+        const accountLocations = await gmb.listLocations(org.tenant_id!, account.name)
+        locations.push(...accountLocations)
+      }
 
       let totalNewReviews = 0
       let totalUnanswered = 0

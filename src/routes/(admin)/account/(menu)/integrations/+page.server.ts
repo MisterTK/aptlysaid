@@ -1,10 +1,11 @@
 import { redirect, fail } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
 import crypto from "crypto"
-import { env as publicEnv } from "$env/dynamic/public"
-import { env as privateEnv } from "$env/dynamic/private"
-import { PUBLIC_GOOGLE_CLIENT_ID } from "$env/static/public"
-import { GOOGLE_CLIENT_SECRET } from "$env/static/private"
+// Use Node.js environment variables instead of SvelteKit env imports
+const publicEnv = process.env
+const privateEnv = process.env
+const PUBLIC_GOOGLE_CLIENT_ID = process.env.PUBLIC_GOOGLE_CLIENT_ID!
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
 
 // Token encryption functions for secure storage
 function getEncryptionKey(): string {
