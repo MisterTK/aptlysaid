@@ -2,7 +2,7 @@ import { json } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 import pkg from "../../../../package.json"
 
-export const GET: RequestHandler = async ({ locals: { supabase } }) => {
+export const GET: RequestHandler = async ({ locals: { supabase, supabaseServiceRole } }) => {
   const checks = {
     status: "healthy",
     version: pkg.version,
@@ -16,8 +16,11 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
 
   try {
 
-    const { data: healthData, error: dbError } = await supabase
-      .rpc('version')
+    const dbClient = supabaseServiceRole || supabase
+    const { data: healthData, error: dbError } = await dbClient
+      .from("profiles")
+      .select("id")
+      .limit(1)
 
     if (dbError) {
       checks.checks.database = `error: ${dbError.message || JSON.stringify(dbError)}`
