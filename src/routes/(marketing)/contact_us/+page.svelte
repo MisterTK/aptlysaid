@@ -115,7 +115,7 @@
           action="?/submitContactUs"
           use:enhance={handleSubmit}
         >
-          {#each formFields as field}
+          {#each formFields as field (field.id)}
             <label for={field.id}>
               <div class="flex flex-row">
                 <div class="text-base font-bold">{field.label}</div>

@@ -28,7 +28,7 @@ export const POST: RequestHandler = async ({
   request,
   locals: { supabaseServiceRole },
 }) => {
-  // const _supabase = supabaseServiceRole // Available if needed
+  const supabase = supabaseServiceRole // eslint-disable-line @typescript-eslint/no-unused-vars
   try {
     // Get webhook secret at runtime (it's optional in the environment)
     const webhookSecret =
@@ -420,7 +420,7 @@ async function logWebhookEvent({
   user_id: string | null
   stripe_customer_id: string | null
   subscription_id: string | null
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }) {
   try {
     // Note: You might want to create a dedicated table for webhook events

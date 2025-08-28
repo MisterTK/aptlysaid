@@ -3,7 +3,7 @@
   import type { Writable } from "svelte/store"
   import type { PageData } from "./$types"
   import { invalidateAll } from "$app/navigation"
-  import { fade, fly, scale } from "svelte/transition"
+  import { fly, scale } from "svelte/transition"
   import { cubicOut } from "svelte/easing"
   import {
     formatReviewDate,
@@ -64,15 +64,6 @@
   // Inline editing state
   let editingResponseId = $state<string | null>(null)
   let editingText = $state("")
-  let feedbackModalId = $state<string | null>(null)
-  let feedbackText = $state("")
-  let feedbackSeverity = $state<"minor" | "major">("minor")
-
-  // Rejection feedback state
-  let rejectModalId = $state<string | null>(null)
-  let rejectFeedbackText = $state("")
-  let rejectBulkMode = $state(false)
-  let rejectBulkIds = $state<string[]>([])
 
   // Load preferences from localStorage
   onMount(() => {
@@ -176,13 +167,6 @@
     }
   }
 
-  // Get priority badge color based on score
-  function getPriorityColor(score: number | null): string {
-    if (!score) return "text-base-content/60"
-    if (score >= 80) return "text-error"
-    if (score >= 60) return "text-warning"
-    return "text-base-content/60"
-  }
 
   let filteredReviews = $derived.by(() => {
     if (!data.reviews) return []
@@ -353,7 +337,7 @@
         const queueData = await response.json()
         
         // Transform queue items to match PublishingQueue component format
-        queueItems = queueData.items.map((item: any, index: number) => ({
+        queueItems = queueData.items.map((item: Record<string, unknown>, index: number) => ({
           id: item.id,
           aiResponseId: item.aiResponseId,
           review: {
@@ -431,66 +415,13 @@
 
       await invalidateAll()
       await openPublishingModal()
-    } catch (error) {
+    } catch {
       publishError = "An error occurred while queuing responses"
     } finally {
       isPublishing = false
     }
   }
 
-  async function queueSelected() {
-    try {
-      isPublishing = true
-      publishError = null
-
-      const selectedAiResponseIds =
-        data.reviews
-          ?.filter(
-            (r) =>
-              selectedReviewIds.has(r.id) &&
-              r.ai_responses?.some(resp => 
-                resp.status === 'approved' &&
-                !resp.response_queue?.some(q => ['pending', 'processing', 'published'].includes(q.status))
-              ),
-          )
-          .flatMap((r) => r.ai_responses
-            ?.filter(resp => 
-              resp.status === 'approved' &&
-              !resp.response_queue?.some(q => ['pending', 'processing', 'published'].includes(q.status))
-            )
-            .map(resp => resp.id))
-          .filter(Boolean) || []
-
-      if (selectedAiResponseIds.length === 0) {
-        publishError = "No approved responses selected for publishing"
-        return
-      }
-
-      // Queue each selected response
-      for (const responseId of selectedAiResponseIds) {
-        const response = await fetch("/api/v1/reviews/queue", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            aiResponseId: responseId,
-          }),
-        })
-        
-        if (!response.ok) {
-          console.error(`Failed to queue response ${responseId}`)
-        }
-      }
-
-      await invalidateAll()
-      await openPublishingModal()
-      clearSelection()
-    } catch (error) {
-      publishError = "An error occurred while queuing selected responses"
-    } finally {
-      isPublishing = false
-    }
-  }
 
   async function queueSingle(aiResponseId: string) {
     if (!aiResponseId || publishingStates.get(aiResponseId)) return
@@ -560,86 +491,13 @@
         const error = await response.json()
         alert(error.error || "Failed to approve responses")
       }
-    } catch (error) {
+    } catch {
       alert("An error occurred while approving responses")
     }
   }
 
-  function bulkReject() {
-    if (selectedReviewIds.size === 0) return
 
-    const aiResponseIds =
-      data.reviews
-        ?.filter(
-          (r) =>
-            selectedReviewIds.has(r.id) &&
-            r.ai_responses?.some(resp => resp.status === 'draft'),
-        )
-        .flatMap((r) => r.ai_responses?.map(resp => resp.id))
-        .filter(Boolean) || []
 
-    if (aiResponseIds.length === 0) {
-      alert("No draft AI responses selected")
-      return
-    }
-
-    rejectModalId = "bulk"
-    rejectFeedbackText = ""
-    rejectBulkMode = true
-    rejectBulkIds = aiResponseIds as string[]
-  }
-
-  async function performBulkReject(aiResponseIds: string[], feedback?: string) {
-    try {
-      const response = await fetch("/api/v1/reviews/ai-response", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          responseIds: aiResponseIds,
-          action: "reject",
-          feedback: feedback || rejectFeedbackText,
-        }),
-      })
-
-      if (response.ok) {
-        await invalidateAll()
-        clearSelection()
-      } else {
-        const error = await response.json()
-        alert(error.error || "Failed to reject responses")
-      }
-    } catch (error) {
-      alert("An error occurred while rejecting responses")
-    }
-  }
-
-  async function reportFeedback(
-    aiResponseId: string,
-    feedback: string,
-    severity: "minor" | "major",
-  ) {
-    try {
-      const response = await fetch("/api/v1/responses/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          responseId: aiResponseId,
-          feedback,
-          severity,
-        }),
-      })
-
-      if (response.ok) {
-        alert("Feedback submitted! This will help improve future AI responses.")
-      } else {
-        alert("Failed to submit feedback")
-      }
-    } catch (error) {
-      alert("An error occurred while submitting feedback")
-    }
-  }
 
   async function editAiResponse(aiResponseId: string, newText: string) {
     try {
@@ -660,49 +518,12 @@
         const error = await response.json()
         alert(error.error || "Failed to update response")
       }
-    } catch (error) {
+    } catch {
       alert("An error occurred while updating response")
     }
   }
 
-  function showFeedbackModal(aiResponseId: string) {
-    feedbackModalId = aiResponseId
-    feedbackText = ""
-    feedbackSeverity = "minor"
-  }
 
-  async function submitFeedback() {
-    if (!feedbackModalId || !feedbackText.trim()) return
-
-    await reportFeedback(feedbackModalId, feedbackText, feedbackSeverity)
-    feedbackModalId = null
-    feedbackText = ""
-  }
-
-  async function submitRejectFeedback() {
-    if (!rejectModalId) return
-
-    try {
-      if (rejectFeedbackText.trim()) {
-        const responseId = rejectBulkMode ? rejectBulkIds[0] : rejectModalId
-        await reportFeedback(responseId, rejectFeedbackText, "major")
-      }
-
-      if (rejectBulkMode) {
-        await performBulkReject(rejectBulkIds, rejectFeedbackText)
-      } else {
-        await performReject(rejectModalId, rejectFeedbackText)
-      }
-
-      rejectModalId = null
-      rejectFeedbackText = ""
-      rejectBulkMode = false
-      rejectBulkIds = []
-    } catch (error) {
-      console.error("Error submitting rejection feedback:", error)
-      alert("Failed to process rejection. Please try again.")
-    }
-  }
 
   async function saveEdit(aiResponseId: string) {
     if (!editingText.trim()) return
@@ -730,105 +551,12 @@
         const error = await response.json()
         alert(error.error || "Failed to approve response")
       }
-    } catch (error) {
+    } catch {
       alert("An error occurred while approving response")
     }
   }
 
-  function rejectResponse(aiResponseId: string) {
-    rejectModalId = aiResponseId
-    rejectFeedbackText = ""
-    rejectBulkMode = false
-    rejectBulkIds = []
-  }
 
-  async function performReject(aiResponseId: string, feedback?: string) {
-    try {
-      const response = await fetch("/api/v1/reviews/ai-response", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          responseId: aiResponseId,
-          action: "reject",
-          feedback: feedback || rejectFeedbackText,
-        }),
-      })
-
-      if (response.ok) {
-        await invalidateAll()
-      } else {
-        const error = await response.json()
-        alert(error.error || "Failed to reject response")
-      }
-    } catch (error) {
-      alert("An error occurred while rejecting response")
-    }
-  }
-
-  // Queue management functions for PublishingQueue component
-  async function handleQueueReorder(fromIndex: number, toIndex: number) {
-    // Swap items in local state
-    const items = [...queueItems]
-    const [removed] = items.splice(fromIndex, 1)
-    items.splice(toIndex, 0, removed)
-    queueItems = items.map((item, index) => ({ ...item, position: index + 1 }))
-    
-    // TODO: Send reorder request to API if needed
-  }
-  
-  async function handleQueueRemove(id: string) {
-    try {
-      // Remove from local state
-      queueItems = queueItems.filter(item => item.id !== id)
-      
-      // TODO: Send remove request to API
-      // await fetch(`/api/v1/reviews/queue/${id}`, { method: 'DELETE' })
-      
-      await invalidateAll()
-    } catch (error) {
-      console.error("Error removing from queue:", error)
-    }
-  }
-  
-  async function handleSettingsChange(newSettings: PublishingSettings) {
-    publishingSettings = newSettings
-    // TODO: Save settings to backend
-  }
-  
-  async function pauseQueue() {
-    try {
-      const response = await fetch("/api/v1/reviews/queue", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ action: "pause" })
-      })
-      
-      if (response.ok) {
-        queuePaused = true
-      }
-    } catch (error) {
-      console.error("Error pausing queue:", error)
-    }
-  }
-  
-  async function resumeQueue() {
-    try {
-      const response = await fetch("/api/v1/reviews/queue", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ action: "resume" })
-      })
-      
-      if (response.ok) {
-        queuePaused = false
-      }
-    } catch (error) {
-      console.error("Error resuming queue:", error)
-    }
-  }
 
   $effect(() => {
     if (editingResponseId) {
@@ -1281,7 +1009,7 @@
                 class:active={selectedLocation === "all"}>All Locations</button
               >
             </li>
-            {#each data.locations as location}
+            {#each data.locations as location (location)}
               <li>
                 <button
                   onclick={() => (selectedLocation = location)}
@@ -1519,26 +1247,6 @@
                     </svg>
                     Approve {draftCount} Draft{draftCount > 1 ? "s" : ""}
                   </button>
-                  <button
-                    onclick={bulkReject}
-                    class="btn btn-error btn-sm btn-outline hover:btn-error transition-all duration-200"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      class="w-4 h-4"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
-                    Reject
-                  </button>
                 {/if}
 
                 {#if stats.approved > 0}
@@ -1646,7 +1354,7 @@
                   >
                 </label>
                 <div class="flex items-center gap-1">
-                  {#each Array(review.rating) as _}
+                  {#each Array.from({length: review.rating}, (_, i) => i) as i (i)}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
@@ -1844,12 +1552,6 @@
                                 )}>Copy Response</button
                             >
                           </li>
-                          <li>
-                            <button
-                              onclick={() => showFeedbackModal(aiResponse.id)}
-                              >Report Issue</button
-                            >
-                          </li>
                         </ul>
                       </div>
                     </div>
@@ -1890,12 +1592,6 @@
                           class="btn btn-success btn-xs"
                         >
                           ✓ Approve
-                        </button>
-                        <button
-                          onclick={() => rejectResponse(aiResponse.id)}
-                          class="btn btn-error btn-xs btn-outline"
-                        >
-                          ✗ Reject
                         </button>
                       </div>
                     {:else if aiResponse.status === "rejected"}
@@ -2081,7 +1777,7 @@
                 </td>
                 <td>
                   <div class="rating rating-sm">
-                    {#each Array(review.rating) as _}
+                    {#each Array.from({length: review.rating}, (_, i) => i) as i (i)}
                       <span class="mask mask-star-2 bg-orange-400"></span>
                     {/each}
                   </div>

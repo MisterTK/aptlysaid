@@ -185,7 +185,7 @@
 
   <!-- Tab Navigation -->
   <div class="tabs tabs-boxed mb-6">
-    {#each tabs as tab}
+    {#each tabs as tab (tab.id)}
       <button
         class="tab {selectedTab === tab.id ? 'tab-active' : ''}"
         onclick={() => (selectedTab = tab.id)}
@@ -251,7 +251,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each monitoring.active_workflows as workflow}
+                {#each monitoring.active_workflows as workflow (workflow.id)}
                   <tr>
                     <td class="font-medium">{workflow.workflow_type || workflow.workflow_name}</td>
                     <td>{workflow.current_step}</td>
@@ -298,7 +298,7 @@
         <div class="card-body">
           <h3 class="card-title">Queue Statistics (Last Hour)</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {#each Object.entries(monitoring.queue_stats) as [queue, stats]}
+            {#each Object.entries(monitoring.queue_stats) as [queue, stats] (queue)}
               <div class="stat bg-base-100 rounded">
                 <div class="stat-title text-xs">{queue.replace("_", " ")}</div>
                 <div class="stat-value text-lg">{stats.processed}</div>
@@ -330,7 +330,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each workflows as workflow}
+              {#each workflows as workflow (workflow.id)}
                 <tr>
                   <td class="font-medium">{workflow.workflow_type || workflow.workflow_name}</td>
                   <td>{workflow.current_step}</td>
@@ -390,7 +390,7 @@
   {:else if selectedTab === "queues"}
     {#if monitoring.queue_health}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {#each monitoring.queue_health as queue}
+        {#each monitoring.queue_health as queue (queue.name)}
           <div class="card bg-base-200">
             <div class="card-body">
               <div class="flex justify-between items-start">
@@ -447,7 +447,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each monitoring.workflow_metrics as metric}
+                {#each monitoring.workflow_metrics as metric (metric.id || metric.workflow_type)}
                   <tr>
                     <td class="font-medium">{metric.workflow_type || metric.workflow_name}</td>
                     <td>
@@ -471,7 +471,7 @@
   {:else if selectedTab === "alerts"}
     {#if monitoring.alerts && monitoring.alerts.length > 0}
       <div class="space-y-2">
-        {#each monitoring.alerts as alert}
+        {#each monitoring.alerts as alert (alert.id)}
           <div
             class="alert {alert.severity === 'CRITICAL'
               ? 'alert-error'

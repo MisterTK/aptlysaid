@@ -134,7 +134,7 @@
   {/if}
 
   <div>
-    {#each results as result, i}
+    {#each results as result, i (result.item.path || i)}
       <a
         href={result.item.path || "/"}
         id="search-result-{i + 1}"

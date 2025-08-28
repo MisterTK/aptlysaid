@@ -420,7 +420,7 @@
                           class="select select-sm select-bordered"
                           disabled={roleChangeLoading}
                         >
-                          {#each Object.entries(roleLabels) as [roleKey, roleLabel]}
+                          {#each Object.entries(roleLabels) as [roleKey, roleLabel] (roleKey)}
                             {#if canManageRole(roleKey) || roleKey === member.role}
                               <option value={roleKey}>{roleLabel}</option>
                             {/if}
@@ -632,7 +632,7 @@
             class="select select-bordered"
             disabled={inviteLoading}
           >
-            {#each Object.entries(roleLabels) as [roleKey, roleLabel]}
+            {#each Object.entries(roleLabels) as [roleKey, roleLabel] (roleKey)}
               {#if roleKey !== "owner" && canManageRole(roleKey)}
                 <option value={roleKey}>{roleLabel}</option>
               {/if}
@@ -714,7 +714,7 @@
             disabled={transferLoading}
           >
             <option value="">Choose a team member...</option>
-            {#each teamMembers.filter((m) => m.role !== "owner") as member}
+            {#each teamMembers.filter((m) => m.role !== "owner") as member (member.user_id)}
               <option value={member.user_id}>
                 {member.full_name || member.email} ({roleLabels[member.role]})
               </option>

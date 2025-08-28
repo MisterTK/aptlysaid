@@ -22,7 +22,7 @@
     ? 'place-content-center'
     : ''} flex-wrap"
 >
-  {#each pricingPlans as plan}
+  {#each pricingPlans as plan (plan.id)}
     <div
       class="flex-none card card-bordered {plan.id === highlightedPlanId
         ? 'border-primary'
@@ -36,7 +36,7 @@
         <div class="mt-auto pt-4 text-sm text-base-content/80">
           Plan Includes:
           <ul class="list-disc list-inside mt-2 space-y-1">
-            {#each plan.features as feature}
+            {#each plan.features as feature (feature)}
               <li class="">{feature}</li>
             {/each}
             <ul></ul>

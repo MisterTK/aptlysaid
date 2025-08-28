@@ -27,12 +27,12 @@ class GMBClient {
     return [];
   }
   
-  async getReviews(locationId) {
+  async getReviews(_locationId) { // eslint-disable-line @typescript-eslint/no-unused-vars
     // TODO: Implement pagination support for large review sets (pageToken parameter)
     return [];
   }
   
-  async postReply(locationId, reviewId, replyText) {
+  async postReply(_locationId, _reviewId, _replyText) { // eslint-disable-line @typescript-eslint/no-unused-vars
     // TODO: Add retry logic for 429 rate limit errors
     return {};
   }
@@ -40,15 +40,15 @@ class GMBClient {
 
 // Helper functions
 const normalizeGoogleReviewId = (id) => id;
-const syncReviewToDatabase = async (review, locationId, tenantId, supabase) => {
+const syncReviewToDatabase = async (_review, _locationId, _tenantId, _supabase) => { // eslint-disable-line @typescript-eslint/no-unused-vars
   // Implement review sync logic
   return { success: true };
 };
-const getSyncState = async (locationId, supabase) => {
+const getSyncState = async (_locationId, _supabase) => { // eslint-disable-line @typescript-eslint/no-unused-vars
   // Implement sync state retrieval
   return {};
 };
-const updateSyncState = async (locationId, state, supabase) => {
+const updateSyncState = async (_locationId, _state, _supabase) => { // eslint-disable-line @typescript-eslint/no-unused-vars
   // Implement sync state update
   return { success: true };
 };
@@ -194,7 +194,7 @@ const handlers = {
         throw new Error(`Failed to fetch existing locations: ${existingLocationsError.message}`);
       }
       const existingLocations = existingLocationsData || [];
-      const existingPlaceIds = existingLocations.map((l)=>l.google_place_id);
+      // const existingPlaceIds = existingLocations.map((l)=>l.google_place_id);
       const results = {
         upserted: 0,
         deleted: 0,

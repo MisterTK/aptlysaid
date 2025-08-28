@@ -274,7 +274,7 @@
 
             <div class="mt-2 space-y-1">
               {#if data.tokenHealth.errors.length > 0}
-                {#each data.tokenHealth.errors as error}
+                {#each data.tokenHealth.errors as error, index (index)}
                   <p class="text-xs text-error">• {error}</p>
                 {/each}
               {/if}
@@ -439,7 +439,7 @@
               Business.
             </p>
             <div class="space-y-3">
-              {#each data.accessibleLocations as location}
+              {#each data.accessibleLocations as location (location.id)}
                 {@const reviewCount =
                   data.locationReviewCounts?.[location.id] || 0}
                 {@const platformData = location.platform_data || {}}

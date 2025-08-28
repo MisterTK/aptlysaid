@@ -200,7 +200,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each planFeatures as feature}
+          {#each planFeatures as feature (feature.name)}
             {#if feature.header}
               <tr class="bg-base-200 font-bold">
                 <td colspan="3">{feature.name} </td>

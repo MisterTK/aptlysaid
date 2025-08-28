@@ -96,7 +96,7 @@
         action={formTarget}
         use:enhance={handleSubmit}
       >
-        {#each fields as field}
+        {#each fields as field (field.id)}
           {#if field.label}
             <label for={field.id}>
               <span class="text-sm text-base-content/60">{field.label}</span>

@@ -527,7 +527,7 @@
             </div>
           {:else}
             <div class="space-y-2">
-              {#each responseGuidelines as guideline, index}
+              {#each responseGuidelines as guideline, index (index)}
                 {#if editingGuideline === index}
                   <div class="space-y-2">
                     <input
@@ -609,7 +609,7 @@
             </div>
           {:else}
             <div class="space-y-2">
-              {#each thingsToAvoid as avoidItem, index}
+              {#each thingsToAvoid as avoidItem, index (index)}
                 {#if editingAvoidItem === index}
                   <div class="space-y-2">
                     <input
@@ -783,7 +783,7 @@
       </div>
 
       <!-- Existing Items -->
-      {#each upsellItems as item}
+      {#each upsellItems as item (item.title)}
         <div
           class="card bg-white shadow-sm {item.status !== 'active'
             ? 'opacity-60'

@@ -77,11 +77,11 @@ export interface ResponseQueueItem {
   next_retry_at: string | null;
   error_message: string | null;
   error_code: string | null;
-  error_details: any | null;
+  error_details: Record<string, unknown> | null;
   processing_started_at: string | null;
   processing_completed_at: string | null;
   processed_by: string | null;
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

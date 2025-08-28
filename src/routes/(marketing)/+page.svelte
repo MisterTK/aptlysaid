@@ -131,7 +131,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      {#each features as feature}
+      {#each features as feature (feature.name)}
         <div
           class="card bg-base-200 hover:shadow-lg transition-shadow duration-300"
         >
@@ -223,7 +223,7 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {#each testimonials as testimonial}
+      {#each testimonials as testimonial (testimonial.author)}
         <div
           class="card bg-base-200 hover:shadow-lg transition-shadow duration-300"
         >

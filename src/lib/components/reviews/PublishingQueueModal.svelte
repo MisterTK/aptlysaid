@@ -161,7 +161,7 @@
                 </tr>
               </thead>
               <tbody>
-                {#each queueItems.slice(0, 10) as item, index}
+                {#each queueItems.slice(0, 10) as item, index (item.id)}
                   <tr>
                     <th>{index + 1}</th>
                     <td>

@@ -64,7 +64,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       name,
       description,
       priority = 0,
-      isActive = true,
+      isActive = true, // eslint-disable-line @typescript-eslint/no-unused-vars
     } = await request.json()
 
     if (!tenantId || !name) {

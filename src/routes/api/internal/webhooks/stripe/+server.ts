@@ -90,7 +90,7 @@ export const POST: RequestHandler = async ({
         break
 
       case "invoice.payment_succeeded":
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice, supabase)
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice)
         break
 
       case "invoice.payment_failed":
@@ -104,16 +104,15 @@ export const POST: RequestHandler = async ({
       case "checkout.session.completed":
         await handleCheckoutSessionCompleted(
           event.data.object as Stripe.Checkout.Session,
-          supabase,
         )
         break
 
       case "customer.created":
-        await handleCustomerCreated(event.data.object as Stripe.Customer, supabase)
+        await handleCustomerCreated(event.data.object as Stripe.Customer)
         break
 
       case "customer.updated":
-        await handleCustomerUpdated(event.data.object as Stripe.Customer, supabase)
+        await handleCustomerUpdated(event.data.object as Stripe.Customer)
         break
 
       default:
@@ -135,7 +134,7 @@ export const POST: RequestHandler = async ({
 }
 
 // Event handlers
-async function handleSubscriptionCreated(subscription: Stripe.Subscription, _supabase: unknown) {
+async function handleSubscriptionCreated(subscription: Stripe.Subscription, supabase: unknown) {
   console.log(`Subscription created: ${subscription.id}`)
 
   try {
@@ -170,7 +169,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription, _sup
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription, _supabase: unknown) {
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription, supabase: unknown) {
   console.log(`Subscription updated: ${subscription.id}`)
 
   try {
@@ -213,7 +212,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription, _sup
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription, _supabase: unknown) {
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription, supabase: unknown) {
   console.log(`Subscription deleted: ${subscription.id}`)
 
   try {
@@ -247,7 +246,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, _sup
   }
 }
 
-async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice, _supabase: unknown) {
+async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   console.log(`Invoice payment succeeded: ${invoice.id}`)
 
   try {
@@ -346,7 +345,6 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription, supabase: u
 
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
-  _supabase: unknown,
 ) {
   console.log(`Checkout session completed: ${session.id}`)
 
@@ -373,7 +371,7 @@ async function handleCheckoutSessionCompleted(
   }
 }
 
-async function handleCustomerCreated(customer: Stripe.Customer, supabase: unknown) {
+async function handleCustomerCreated(customer: Stripe.Customer) {
   console.log(`Customer created: ${customer.id}`)
 
   try {
@@ -393,7 +391,7 @@ async function handleCustomerCreated(customer: Stripe.Customer, supabase: unknow
   }
 }
 
-async function handleCustomerUpdated(customer: Stripe.Customer, supabase: unknown) {
+async function handleCustomerUpdated(customer: Stripe.Customer) {
   console.log(`Customer updated: ${customer.id}`)
 
   try {

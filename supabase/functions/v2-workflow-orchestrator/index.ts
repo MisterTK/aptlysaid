@@ -81,12 +81,12 @@ class ExternalIntegratorClient {
 }
 // Workflow step definitions
 const workflowSteps = {
-  async generateAIResponse (ctx, db) {
+  async generateAIResponse (ctx, supabase) {
     // Support both field naming conventions
     const reviewId = ctx.reviewId || ctx.review_id;
     const tenantId = ctx.tenantId || ctx.tenant_id;
     // Debug logging
-    await db.from("system_logs").insert({
+    await supabase.from("system_logs").insert({
       category: "workflow",
       log_level: "info",
       message: `Starting generateAIResponse step`,
@@ -99,11 +99,11 @@ const workflowSteps = {
     if (!reviewId || !tenantId) {
       throw new Error(`Missing required context: reviewId=${reviewId}, tenantId=${tenantId}`);
     }
-    const { data: review } = await db.from("reviews").select("review_text, rating, platform_data, status, needs_response, response_source, has_owner_reply").eq("id", reviewId).single();
+    const { data: review } = await supabase.from("reviews").select("review_text, rating, platform_data, status, needs_response, response_source, has_owner_reply").eq("id", reviewId).single();
     if (!review) throw new Error(`Review not found: ${reviewId}`);
     // Skip rating-only reviews
     if (!review.review_text?.trim()) {
-      await db.from("reviews").update({
+      await supabase.from("reviews").update({
         status: "responded",
         needs_response: false
       }).eq("id", reviewId);
@@ -115,7 +115,7 @@ const workflowSteps = {
     // Check if owner already responded manually via GMB
     const hasOwnerReply = review.response_source === 'owner_external' || review.has_owner_reply || review.platform_data?.has_owner_reply || review.platform_data?.reviewReply?.comment || review.platform_data?.owner_reply_text;
     if (hasOwnerReply) {
-      await db.from("reviews").update({
+      await supabase.from("reviews").update({
         status: "responded",
         needs_response: false,
         response_source: review.response_source || 'owner_external'
@@ -133,7 +133,7 @@ const workflowSteps = {
       };
     }
     // Check if we already have an AI response for this review
-    const { data: existingResponse } = await db.from("ai_responses").select("id, status").eq("review_id", reviewId).eq("tenant_id", tenantId).maybeSingle();
+    const { data: existingResponse } = await supabase.from("ai_responses").select("id, status").eq("review_id", reviewId).eq("tenant_id", tenantId).maybeSingle();
     if (existingResponse) {
       return {
         skipped: true,
@@ -141,7 +141,7 @@ const workflowSteps = {
         responseId: existingResponse.id
       };
     }
-    const { data: tenant } = await db.from("tenants").select("settings").eq("id", tenantId).single();
+    const { data: tenant } = await supabase.from("tenants").select("settings").eq("id", tenantId).single();
     if (!tenant) throw new Error(`Tenant not found: ${tenantId}`);
     const baseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -155,7 +155,7 @@ const workflowSteps = {
       reviewId,
       rating: review.rating || 3
     });
-    const { data: newResponse } = await db.from("ai_responses").insert({
+    const { data: newResponse } = await supabase.from("ai_responses").insert({
       review_id: reviewId,
       tenant_id: tenantId,
       response_text: aiResponse.content,
@@ -167,7 +167,7 @@ const workflowSteps = {
       response_language: "en",
       metadata: aiResponse.metadata || {}
     }).select("id").single();
-    await db.from("reviews").update({
+    await supabase.from("reviews").update({
       status: "processing",
       response_source: "ai"
     }).eq("id", reviewId);
@@ -175,7 +175,7 @@ const workflowSteps = {
       createdResponseId: newResponse.id
     };
   },
-  async waitForApproval (ctx, db) {
+  async waitForApproval (ctx, supabase) {
     if (ctx.skipped && ctx.reason === "rating_only") {
       return {
         completed: true,
@@ -188,7 +188,7 @@ const workflowSteps = {
       throw new Error(`Missing context for approval check: responseId=${createdResponseId}, reviewId=${reviewId}, tenantId=${tenantId}`);
     }
     // Get AI response and review details
-    const { data: response } = await db.from("ai_responses").select("status, response_text, tone, metadata").eq("id", createdResponseId).single();
+    const { data: response } = await supabase.from("ai_responses").select("status, response_text, tone, metadata").eq("id", createdResponseId).single();
     if (!response) {
       throw new Error(`AI response not found: ${createdResponseId}`);
     }
@@ -200,12 +200,12 @@ const workflowSteps = {
       };
     }
     // Get review details for auto-publishing evaluation
-    const { data: review } = await db.from("reviews").select("rating, location_id, review_text").eq("id", reviewId).single();
+    const { data: review } = await supabase.from("reviews").select("rating, location_id, review_text").eq("id", reviewId).single();
     if (!review) {
       throw new Error(`Review not found: ${reviewId}`);
     }
     // Get response settings for this location/tenant
-    const { data: settings } = await db.from("response_settings").select("*").eq("tenant_id", tenantId).eq("location_id", review.location_id).maybeSingle();
+    const { data: settings } = await supabase.from("response_settings").select("*").eq("tenant_id", tenantId).eq("location_id", review.location_id).maybeSingle();
     // If no settings or auto-publish disabled, wait for manual approval
     if (!settings || !settings.auto_publish_enabled) {
       if (response.status === "draft") {
@@ -311,7 +311,7 @@ const workflowSteps = {
       }
     }
     // All checks passed - auto-approve the response
-    await db.from("ai_responses").update({
+    await supabase.from("ai_responses").update({
       status: "approved",
       approved_at: new Date().toISOString(),
       approved_by: null,
@@ -336,7 +336,7 @@ const workflowSteps = {
     }).eq("id", createdResponseId);
     // Add to response queue for publishing if notifications enabled
     if (settings.notify_on_auto_publish) {
-      await db.from("system_logs").insert({
+      await supabase.from("system_logs").insert({
         tenant_id: tenantId,
         category: "auto_publish",
         log_level: "info",
@@ -359,15 +359,15 @@ const workflowSteps = {
       quality_score: qualityScore
     };
   },
-  async publishResponse (ctx, db) {
+  async publishResponse (ctx, supabase) {
     const { createdResponseId, reviewId, tenantId, queueItemId } = ctx;
     // Get response and validate it's approved
-    const { data: response } = await db.from("ai_responses").select("response_text, status, metadata, approved_by").eq("id", createdResponseId).single();
+    const { data: response } = await supabase.from("ai_responses").select("response_text, status, metadata, approved_by").eq("id", createdResponseId).single();
     if (!response || response.status !== "approved") {
       throw new Error(`Cannot publish unapproved response - status: ${response?.status || 'not found'}`);
     }
     // Get review and location details
-    const { data: review } = await db.from("reviews").select("platform_review_id, location_id, rating, platform_data").eq("id", reviewId).single();
+    const { data: review } = await supabase.from("reviews").select("platform_review_id, location_id, rating, platform_data").eq("id", reviewId).single();
     if (!review) {
       throw new Error(`Review not found: ${reviewId}`);
     }
@@ -375,7 +375,7 @@ const workflowSteps = {
     const isManuallyApproved = !!response.approved_by;
     if (!isManuallyApproved) {
       // CRITICAL: Validate publishing through response_settings for auto-approved responses
-      const { data: settings } = await db.from("response_settings").select("*").eq("tenant_id", tenantId).eq("location_id", review.location_id).maybeSingle();
+      const { data: settings } = await supabase.from("response_settings").select("*").eq("tenant_id", tenantId).eq("location_id", review.location_id).maybeSingle();
       // If no settings exist, allow publishing (default behavior)
       // But if settings exist, they must allow publishing
       if (settings) {
@@ -399,7 +399,7 @@ const workflowSteps = {
             // Check recent publishing activity
             const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
             const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-            const { data: recentPublishes } = await db.from("ai_responses").select("published_at").eq("tenant_id", tenantId).gte("published_at", dayAgo).not("published_at", "is", null);
+            const { data: recentPublishes } = await supabase.from("ai_responses").select("published_at").eq("tenant_id", tenantId).gte("published_at", dayAgo).not("published_at", "is", null);
             const todayCount = recentPublishes?.filter((r)=>r.published_at >= dayAgo).length || 0;
             const hourCount = recentPublishes?.filter((r)=>r.published_at >= hourAgo).length || 0;
             if (rateLimits.daily_limit && todayCount >= rateLimits.daily_limit) {
@@ -433,22 +433,22 @@ const workflowSteps = {
     const reviewIdToPublish = review.platform_data?.original_review_id || review.platform_review_id;
     await client.publishToGMB(reviewIdToPublish, response.response_text, tenantId);
     // Update statuses
-    const { data: tenantUser } = await db.from("tenant_users").select("user_id").eq("tenant_id", tenantId).eq("status", "active").in("role", [
+    const { data: tenantUser } = await supabase.from("tenant_users").select("user_id").eq("tenant_id", tenantId).eq("status", "active").in("role", [
       "owner",
       "admin"
     ]).order("role").limit(1).single();
     if (tenantUser) {
-      await db.from("ai_responses").update({
+      await supabase.from("ai_responses").update({
         status: "published",
         published_at: new Date().toISOString(),
         published_by: tenantUser.user_id
       }).eq("id", createdResponseId);
     }
-    await db.from("reviews").update({
+    await supabase.from("reviews").update({
       status: "responded"
     }).eq("id", reviewId);
     if (queueItemId) {
-      await db.from("response_queue").update({
+      await supabase.from("response_queue").update({
         status: "published",
         processing_completed_at: new Date().toISOString()
       }).eq("id", queueItemId);
@@ -457,7 +457,7 @@ const workflowSteps = {
       published: true
     };
   },
-  async syncReviews (ctx, db) {
+  async syncReviews (ctx, supabase) {
     const { locationId, tenantId } = ctx;
     const baseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -466,7 +466,7 @@ const workflowSteps = {
     }
     const client = new ExternalIntegratorClient(baseUrl + "/functions/v1/v2-external-integrator", serviceKey);
     const syncResult = await client.syncGMBReviews(locationId, tenantId);
-    await db.from("locations").update({
+    await supabase.from("locations").update({
       status: "active",
       last_sync_at: new Date().toISOString()
     }).eq("id", locationId);
@@ -474,9 +474,9 @@ const workflowSteps = {
       syncedCount: syncResult.count
     };
   },
-  async refreshToken (ctx, db) {
+  async refreshToken (ctx, supabase) {
     // Log incoming context for debugging
-    await db.from("system_logs").insert({
+    await supabase.from("system_logs").insert({
       category: "workflow",
       log_level: "debug",
       message: "Token refresh started",
@@ -490,7 +490,7 @@ const workflowSteps = {
       throw new Error(`Missing required context for token refresh: tenantId=${tenantId}, tokenId=${tokenId}`);
     }
     // Get the oauth token that needs refresh (including expired ones)
-    const { data: tokens, error: fetchError } = await db.from("oauth_tokens").select("*").eq("id", tokenId).single();
+    const { data: tokens, error: fetchError } = await supabase.from("oauth_tokens").select("*").eq("id", tokenId).single();
     if (fetchError) {
       throw new Error(`Failed to fetch token: ${fetchError.message}`);
     }
@@ -535,7 +535,7 @@ const workflowSteps = {
       throw new Error(`Failed to encrypt new access token: ${encryptError instanceof Error ? encryptError.message : 'Unknown error'}`);
     }
     // Update the oauth_tokens record
-    const { error: updateError } = await db.from("oauth_tokens").update({
+    const { error: updateError } = await supabase.from("oauth_tokens").update({
       encrypted_access_token: encryptedAccessToken,
       expires_at: new Date(Date.now() + newTokenData.expires_in * 1000).toISOString(),
       last_refresh_at: new Date().toISOString(),
@@ -547,7 +547,7 @@ const workflowSteps = {
       throw new Error(`Failed to update token: ${updateError.message}`);
     }
     // Log successful refresh
-    await db.from("system_logs").insert({
+    await supabase.from("system_logs").insert({
       category: "workflow",
       log_level: "info",
       message: "Token refresh completed successfully",
@@ -562,7 +562,8 @@ const workflowSteps = {
       newExpiresAt: new Date(Date.now() + newTokenData.expires_in * 1000)
     };
   },
-  async syncLocations (ctx, db) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async syncLocations (ctx, _supabase) {
     const { tenantId, tokenId } = ctx;
     if (!tenantId || !tokenId) {
       throw new Error(`Missing required context for location sync: tenantId=${tenantId}, tokenId=${tokenId}`);
@@ -639,14 +640,14 @@ const workflows = {
   }
 };
 // Process workflow
-async function processWorkflow(workflow, db) {
+async function processWorkflow(workflow, supabase) {
   const definition = workflows[workflow.workflow_type];
   if (!definition) throw new Error(`Unknown workflow type: ${workflow.workflow_type}`);
   const currentStep = definition.steps.find((s)=>s.name === workflow.current_step);
   if (!currentStep) throw new Error(`Unknown step: ${workflow.current_step}`);
   // Execute step - use input_data for initial context if context_data is empty
   const stepContext = workflow.context_data && Object.keys(workflow.context_data).length > 0 ? workflow.context_data : workflow.input_data;
-  const resultContext = await currentStep.execute(stepContext, db);
+  const resultContext = await currentStep.execute(stepContext, supabase);
   const updatedContext = {
     ...stepContext,
     ...resultContext
@@ -667,7 +668,7 @@ async function processWorkflow(workflow, db) {
     }
   };
   // Log what we're updating
-  await db.from("system_logs").insert({
+  await supabase.from("system_logs").insert({
     category: "workflow",
     log_level: "debug",
     message: "Updating workflow after step completion",
@@ -680,7 +681,7 @@ async function processWorkflow(workflow, db) {
       update_data: updateData
     }
   });
-  const { error: updateError } = await db.from("workflows").update(updateData).eq("id", workflow.id);
+  const { error: updateError } = await supabase.from("workflows").update(updateData).eq("id", workflow.id);
   if (updateError) {
     throw new Error(`Failed to update workflow: ${updateError.message}`);
   }

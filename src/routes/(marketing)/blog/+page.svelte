@@ -26,7 +26,7 @@
   </div>
   <div class="text-lg text-center">A demo blog with sample content.</div>
 
-  {#each sortedBlogPosts as post}
+  {#each sortedBlogPosts as post (post.link)}
     <a href={post.link}>
       <div class="card my-6 bg-base-100 shadow-xl flex-row overflow-hidden">
         <div class="flex-none w-6 md:w-32 bg-secondary"></div>

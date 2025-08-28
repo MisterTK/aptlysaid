@@ -279,7 +279,7 @@
                 bind:value={settings.timezone}
                 disabled={!settings.auto_publish}
               >
-                {#each timezones as tz}
+                {#each timezones as tz (tz)}
                   <option value={tz}>{tz}</option>
                 {/each}
               </select>
