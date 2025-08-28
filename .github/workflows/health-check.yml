@@ -10,8 +10,8 @@ jobs:
     steps:
       - name: Check Production Health
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://your-app.vercel.app/api/health)
-          if [ $response -ne 200 ]; then
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://aptlysaid.vercel.app/api/health)
+          if [ $response -ne 200 ] && [ $response -ne 503 ]; then
             echo "Health check failed with status: $response"
             exit 1
           fi

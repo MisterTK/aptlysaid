@@ -18,9 +18,8 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
 
     const { error: dbError } = await supabase
       .from("profiles")
-      .select("count")
+      .select("id")
       .limit(1)
-      .single()
 
     checks.checks.database = dbError ? "error" : "ok"
 
