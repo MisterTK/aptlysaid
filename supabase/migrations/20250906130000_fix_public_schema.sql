@@ -34,11 +34,15 @@ SELECT
     l.address,
     l.phone,
     l.website,
-    l.business_hours,
     l.google_place_id,
+    l.business_type,
+    l.industry,
+    l.rating,
+    l.review_count,
+    l.status,
     l.created_at,
     l.updated_at,
-    l.user_id,
+    l.tenant_id,
     CASE 
         WHEN ot.id IS NOT NULL THEN true 
         ELSE false 
