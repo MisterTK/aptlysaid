@@ -172,87 +172,14 @@ BEGIN
 END $$;
 
 -- ====================================================================
--- MISSING VIEWS
+-- MISSING VIEWS - SKIPPED FOR NOW
 -- ====================================================================
-
--- Note: cron_job_health view skipped - cron extension may not be available or configured
-
--- Create view: public.locations_with_oauth
--- Purpose: Locations with OAuth connection status
-CREATE OR REPLACE VIEW public.locations_with_oauth AS
-SELECT 
-    l.id,
-    l.tenant_id,
-    l.name,
-    l.google_place_id,
-    l.address,
-    l.phone,
-    l.website,
-    l.latitude,
-    l.longitude,
-    l.timezone,
-    l.status,
-    l.created_at,
-    l.updated_at,
-    CASE 
-        WHEN ot.id IS NOT NULL AND ot.expires_at > now() THEN true
-        ELSE false 
-    END as has_oauth,
-    CASE 
-        WHEN ot.id IS NOT NULL AND ot.expires_at > now() THEN true
-        ELSE false 
-    END as oauth_valid
-FROM public.locations l
-LEFT JOIN public.oauth_tokens ot ON l.id = ot.location_id AND ot.status = 'active';
-
--- Create view: public.v_dashboard_overview  
--- Purpose: Dashboard overview metrics with tenant isolation
-CREATE OR REPLACE VIEW public.v_dashboard_overview AS
-SELECT 
-    t.id as tenant_id,
-    t.name as tenant_name,
-    COUNT(DISTINCT l.id) as total_locations,
-    COUNT(DISTINCT CASE WHEN ot.expires_at > now() AND ot.status = 'active' THEN l.id END) as connected_locations,
-    COUNT(DISTINCT r.id) as total_reviews,
-    COUNT(DISTINCT CASE WHEN ar.id IS NOT NULL THEN r.id END) as responded_reviews,
-    COUNT(DISTINCT CASE WHEN ar.published_at IS NOT NULL THEN r.id END) as published_responses,
-    ROUND(
-        AVG(CASE WHEN r.rating IS NOT NULL THEN r.rating END), 2
-    ) as avg_rating,
-    ROUND(
-        (COUNT(DISTINCT CASE WHEN ar.id IS NOT NULL THEN r.id END)::decimal / 
-         NULLIF(COUNT(DISTINCT r.id), 0)) * 100, 2
-    ) as response_rate
-FROM public.tenants t
-LEFT JOIN public.locations l ON t.id = l.tenant_id
-LEFT JOIN public.oauth_tokens ot ON l.id = ot.location_id
-LEFT JOIN public.reviews r ON l.id = r.location_id
-LEFT JOIN public.ai_responses ar ON r.id = ar.review_id
-GROUP BY t.id, t.name;
-
--- Create view: public.v_response_performance
--- Purpose: Response performance metrics and analytics
-CREATE OR REPLACE VIEW public.v_response_performance AS
-SELECT 
-    l.tenant_id,
-    DATE_TRUNC('day', r.created_at) as date,
-    COUNT(DISTINCT ar.id) as responses_generated,
-    COUNT(DISTINCT CASE WHEN ar.published_at IS NOT NULL THEN ar.id END) as responses_published,
-    ROUND(
-        AVG(
-            CASE WHEN ar.published_at IS NOT NULL 
-            THEN EXTRACT(EPOCH FROM (ar.published_at - ar.created_at)) / 3600.0
-            END
-        ), 2
-    ) as avg_hours_to_publish,
-    ROUND(AVG(ar.confidence_score), 3) as avg_confidence_score,
-    ROUND(AVG(LENGTH(ar.response_text)), 0) as avg_response_length
-FROM public.reviews r
-JOIN public.locations l ON r.location_id = l.id
-LEFT JOIN public.ai_responses ar ON r.id = ar.review_id
-WHERE r.created_at >= CURRENT_DATE - INTERVAL '90 days'
-GROUP BY l.tenant_id, DATE_TRUNC('day', r.created_at)
-ORDER BY date DESC;
+-- Note: Views skipped due to missing dependencies in production environment
+-- These can be added later once the required tables are confirmed to exist:
+-- - public.cron_job_health (requires cron extension)
+-- - public.locations_with_oauth (requires oauth_tokens table)
+-- - public.v_dashboard_overview (requires multiple application tables)
+-- - public.v_response_performance (requires multiple application tables)
 
 -- ====================================================================
 -- COMMENTS
@@ -270,10 +197,7 @@ COMMENT ON COLUMN extensions.wrappers_fdw_stats.bytes_in IS 'Total bytes input f
 COMMENT ON COLUMN extensions.wrappers_fdw_stats.bytes_out IS 'Total bytes output to Postgres';
 COMMENT ON COLUMN extensions.wrappers_fdw_stats.metadata IS 'Metadata specific for the FDW';
 
--- Add view comments
-COMMENT ON VIEW public.locations_with_oauth IS 'Locations with OAuth status - respects user RLS policies';
-COMMENT ON VIEW public.v_dashboard_overview IS 'Dashboard overview metrics - respects user RLS policies';
-COMMENT ON VIEW public.v_response_performance IS 'Response performance metrics - respects user RLS policies';
+-- View comments skipped - views not created due to missing dependencies
 
 -- ====================================================================
 -- ROW LEVEL SECURITY (RLS)
