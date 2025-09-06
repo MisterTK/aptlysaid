@@ -175,18 +175,24 @@ END $$;
 -- MISSING VIEWS
 -- ====================================================================
 
--- Create view: public.cron_job_health
+-- Create view: public.cron_job_health (only if cron extension is available)
 -- Purpose: Cron job execution history with RLS policies
-CREATE OR REPLACE VIEW public.cron_job_health AS
-SELECT 
-    job_name,
-    started_at,
-    finished_at,
-    succeeded,
-    error_message,
-    EXTRACT(EPOCH FROM (finished_at - started_at)) / 1000.0 as execution_duration_ms
-FROM cron.job_run_details
-ORDER BY started_at DESC;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'cron') 
+       AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'cron' AND table_name = 'job_run_details') THEN
+        CREATE OR REPLACE VIEW public.cron_job_health AS
+        SELECT 
+            job_name,
+            started_at,
+            finished_at,
+            succeeded,
+            error_message,
+            EXTRACT(EPOCH FROM (finished_at - started_at)) / 1000.0 as execution_duration_ms
+        FROM cron.job_run_details
+        ORDER BY started_at DESC;
+    END IF;
+END $$;
 
 -- Create view: public.locations_with_oauth
 -- Purpose: Locations with OAuth connection status
