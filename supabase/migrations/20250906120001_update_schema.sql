@@ -1,16 +1,18 @@
 -- ====================================================================
--- SUPABASE MIGRATION: Make Destination Database Identical to Source
+-- SUPABASE MIGRATION: Make Destination Database Identical to Source (FIXED)
 -- ====================================================================
--- Generated: 2025-09-06
+-- Generated: 2025-09-06 (Fixed Version)
 -- Purpose: Migrate destination database to match source database schema
 --
 -- This migration adds missing tables, views, indexes, and comments
 -- to make the destination database identical to the source database.
+-- Fixed to handle missing schemas and extensions properly.
 -- ====================================================================
 
--- Enable necessary extensions (if not already enabled)
--- CREATE EXTENSION IF NOT EXISTS "wrappers" SCHEMA "extensions";
--- CREATE EXTENSION IF NOT EXISTS "pgmq" SCHEMA "public";
+-- Enable necessary extensions and create schemas (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS "wrappers" SCHEMA "extensions";
+CREATE SCHEMA IF NOT EXISTS "net";
+CREATE EXTENSION IF NOT EXISTS "pgmq" SCHEMA "public";
 
 -- ====================================================================
 -- MISSING TABLES
@@ -329,35 +331,11 @@ BEGIN
 END $$;
 
 -- ====================================================================
--- VERIFICATION QUERIES (Optional - Comment out in production)
--- ====================================================================
-
-/*
--- Verify tables were created
-SELECT schemaname, tablename, tableowner 
-FROM pg_tables 
-WHERE schemaname IN ('extensions', 'net', 'pgmq', 'supabase_functions')
-ORDER BY schemaname, tablename;
-
--- Verify views were created
-SELECT schemaname, viewname, viewowner 
-FROM pg_views 
-WHERE schemaname = 'public' 
-AND viewname IN ('cron_job_health', 'locations_with_oauth', 'v_dashboard_overview', 'v_response_performance')
-ORDER BY viewname;
-
--- Verify indexes were created
-SELECT schemaname, tablename, indexname, indexdef
-FROM pg_indexes 
-WHERE schemaname IN ('extensions', 'net', 'supabase_functions')
-ORDER BY schemaname, tablename, indexname;
-*/
-
--- ====================================================================
 -- MIGRATION COMPLETE
 -- ====================================================================
 -- 
 -- This migration has successfully:
+-- ✓ Created necessary schemas and extensions
 -- ✓ Created 6 missing tables with proper structure and constraints
 -- ✓ Created 4 missing views for dashboard and monitoring functionality  
 -- ✓ Added all required indexes for optimal performance
