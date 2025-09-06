@@ -51,7 +51,7 @@ SELECT
         ELSE 'Expired'
     END as oauth_status
 FROM locations l
-LEFT JOIN oauth_tokens ot ON l.id = ot.location_id
+LEFT JOIN oauth_tokens ot ON l.oauth_token_id = ot.id
 ORDER BY l.name;
 
 -- Create view: public.v_dashboard_overview
