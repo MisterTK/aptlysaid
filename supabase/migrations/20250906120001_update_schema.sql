@@ -12,7 +12,8 @@
 -- Enable necessary extensions and create schemas (if not already enabled)
 CREATE EXTENSION IF NOT EXISTS "wrappers" SCHEMA "extensions";
 CREATE SCHEMA IF NOT EXISTS "net";
-CREATE EXTENSION IF NOT EXISTS "pgmq" SCHEMA "public";
+CREATE SCHEMA IF NOT EXISTS "pgmq";
+CREATE EXTENSION IF NOT EXISTS "pgmq" SCHEMA "pgmq";
 
 -- ====================================================================
 -- MISSING TABLES
