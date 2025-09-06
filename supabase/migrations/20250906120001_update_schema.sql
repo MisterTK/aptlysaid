@@ -190,16 +190,9 @@ END $$;
 -- View comments skipped - views not created due to missing dependencies
 
 -- ====================================================================
--- ROW LEVEL SECURITY (RLS)
+-- ROW LEVEL SECURITY (RLS) - SKIPPED
 -- ====================================================================
-
--- Enable RLS on tables where specified in source
-ALTER TABLE extensions.wrappers_fdw_stats DISABLE ROW LEVEL SECURITY;
-ALTER TABLE net._http_response DISABLE ROW LEVEL SECURITY;
-ALTER TABLE net.http_request_queue DISABLE ROW LEVEL SECURITY;
-ALTER TABLE pgmq.meta DISABLE ROW LEVEL SECURITY;
-ALTER TABLE supabase_functions.hooks DISABLE ROW LEVEL SECURITY;
-ALTER TABLE supabase_functions.migrations DISABLE ROW LEVEL SECURITY;
+-- RLS operations skipped due to permission restrictions in production environment
 
 -- ====================================================================
 -- ADDITIONAL COMMENT UPDATES FOR EXISTING TABLES - SKIPPED
