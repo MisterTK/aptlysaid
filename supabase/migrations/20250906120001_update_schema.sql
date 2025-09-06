@@ -175,24 +175,7 @@ END $$;
 -- MISSING VIEWS
 -- ====================================================================
 
--- Create view: public.cron_job_health (only if cron extension is available)
--- Purpose: Cron job execution history with RLS policies
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.schemata WHERE schema_name = 'cron') 
-       AND EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'cron' AND table_name = 'job_run_details') THEN
-        CREATE OR REPLACE VIEW public.cron_job_health AS
-        SELECT 
-            job_name,
-            started_at,
-            finished_at,
-            succeeded,
-            error_message,
-            EXTRACT(EPOCH FROM (finished_at - started_at)) / 1000.0 as execution_duration_ms
-        FROM cron.job_run_details
-        ORDER BY started_at DESC;
-    END IF;
-END $$;
+-- Note: cron_job_health view skipped - cron extension may not be available or configured
 
 -- Create view: public.locations_with_oauth
 -- Purpose: Locations with OAuth connection status
@@ -288,7 +271,6 @@ COMMENT ON COLUMN extensions.wrappers_fdw_stats.bytes_out IS 'Total bytes output
 COMMENT ON COLUMN extensions.wrappers_fdw_stats.metadata IS 'Metadata specific for the FDW';
 
 -- Add view comments
-COMMENT ON VIEW public.cron_job_health IS 'Cron job execution history - respects user RLS policies';
 COMMENT ON VIEW public.locations_with_oauth IS 'Locations with OAuth status - respects user RLS policies';
 COMMENT ON VIEW public.v_dashboard_overview IS 'Dashboard overview metrics - respects user RLS policies';
 COMMENT ON VIEW public.v_response_performance IS 'Response performance metrics - respects user RLS policies';
