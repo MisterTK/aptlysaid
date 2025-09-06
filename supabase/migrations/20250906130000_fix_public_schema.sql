@@ -68,17 +68,18 @@ SELECT
 FROM locations
 UNION ALL
 SELECT 
-    'Active Reviews' as metric,
+    'Recent Reviews' as metric,
     COUNT(*)::text as value,
     'reviews' as category
 FROM reviews 
-WHERE status = 'active'
+WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
 UNION ALL
 SELECT 
     'AI Responses Generated' as metric,
     COUNT(*)::text as value,
     'ai' as category
 FROM ai_responses
+WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
 UNION ALL
 SELECT 
     'Response Queue Items' as metric,
@@ -88,7 +89,7 @@ FROM response_queue
 WHERE status = 'pending'
 UNION ALL
 SELECT 
-    'Cached Contexts' as metric,
+    'Valid Cached Contexts' as metric,
     COUNT(*)::text as value,
     'cache' as category
 FROM context_caches 
@@ -101,15 +102,16 @@ CREATE OR REPLACE VIEW public.v_response_performance AS
 SELECT 
     DATE(ar.created_at) as date,
     COUNT(*) as total_responses,
-    AVG(ar.processing_time_ms)::integer as avg_processing_time_ms,
-    MIN(ar.processing_time_ms) as min_processing_time_ms,
-    MAX(ar.processing_time_ms) as max_processing_time_ms,
-    COUNT(CASE WHEN ar.status = 'completed' THEN 1 END) as successful_responses,
-    COUNT(CASE WHEN ar.status = 'failed' THEN 1 END) as failed_responses,
+    AVG(ar.generation_time_ms)::integer as avg_generation_time_ms,
+    MIN(ar.generation_time_ms) as min_generation_time_ms,
+    MAX(ar.generation_time_ms) as max_generation_time_ms,
+    COUNT(CASE WHEN ar.status = 'published' THEN 1 END) as published_responses,
+    COUNT(CASE WHEN ar.status = 'rejected' THEN 1 END) as rejected_responses,
+    COUNT(CASE WHEN ar.status = 'approved' THEN 1 END) as approved_responses,
     ROUND(
-        COUNT(CASE WHEN ar.status = 'completed' THEN 1 END)::decimal / 
+        COUNT(CASE WHEN ar.status = 'published' THEN 1 END)::decimal / 
         COUNT(*)::decimal * 100, 2
-    ) as success_rate_percent
+    ) as publish_rate_percent
 FROM ai_responses ar
 WHERE ar.created_at >= CURRENT_DATE - INTERVAL '30 days'
 GROUP BY DATE(ar.created_at)
