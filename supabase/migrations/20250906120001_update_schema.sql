@@ -185,17 +185,7 @@ END $$;
 -- COMMENTS
 -- ====================================================================
 
--- Add table comments
-COMMENT ON TABLE extensions.wrappers_fdw_stats IS 'Wrappers Foreign Data Wrapper statistics';
-COMMENT ON TABLE supabase_functions.hooks IS 'Supabase Functions Hooks: Audit trail for triggered hooks.';
-
--- Add column comments for extensions.wrappers_fdw_stats
-COMMENT ON COLUMN extensions.wrappers_fdw_stats.create_times IS 'Total number of times the FDW instance has been created';
-COMMENT ON COLUMN extensions.wrappers_fdw_stats.rows_in IS 'Total rows input from origin';
-COMMENT ON COLUMN extensions.wrappers_fdw_stats.rows_out IS 'Total rows output to Postgres';
-COMMENT ON COLUMN extensions.wrappers_fdw_stats.bytes_in IS 'Total bytes input from origin';
-COMMENT ON COLUMN extensions.wrappers_fdw_stats.bytes_out IS 'Total bytes output to Postgres';
-COMMENT ON COLUMN extensions.wrappers_fdw_stats.metadata IS 'Metadata specific for the FDW';
+-- Table and column comments skipped due to permission restrictions
 
 -- View comments skipped - views not created due to missing dependencies
 
