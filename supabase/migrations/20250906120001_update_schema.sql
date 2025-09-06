@@ -202,37 +202,9 @@ ALTER TABLE supabase_functions.hooks DISABLE ROW LEVEL SECURITY;
 ALTER TABLE supabase_functions.migrations DISABLE ROW LEVEL SECURITY;
 
 -- ====================================================================
--- ADDITIONAL COMMENT UPDATES FOR EXISTING TABLES
+-- ADDITIONAL COMMENT UPDATES FOR EXISTING TABLES - SKIPPED
 -- ====================================================================
-
--- Update comments for existing tables to match source
-DO $$
-BEGIN
-    -- Update ai_model_config comment
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'ai_model_config') THEN
-        COMMENT ON TABLE public.ai_model_config IS 'Simplified AI model configuration. All tenants use the default config unless overridden.';
-    END IF;
-    
-    -- Update ai_responses comment
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'ai_responses') THEN
-        COMMENT ON TABLE public.ai_responses IS 'AI-generated responses with strict tenant isolation via RLS policies';
-    END IF;
-    
-    -- Update context_caches comment
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'context_caches') THEN
-        COMMENT ON TABLE public.context_caches IS 'Stores context cache metadata for AI generation cost optimization';
-    END IF;
-    
-    -- Update response_queue comment
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'response_queue') THEN
-        COMMENT ON TABLE public.response_queue IS 'Publishing queue for AI responses with strict tenant isolation via RLS policies';
-    END IF;
-    
-    -- Update reviews comment
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'reviews') THEN
-        COMMENT ON TABLE public.reviews IS 'Customer reviews with strict tenant isolation via RLS policies';
-    END IF;
-END $$;
+-- Comment updates skipped due to permission restrictions in production environment
 
 -- ====================================================================
 -- MIGRATION COMPLETE
