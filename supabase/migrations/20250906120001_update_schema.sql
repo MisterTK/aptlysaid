@@ -13,6 +13,7 @@
 CREATE EXTENSION IF NOT EXISTS "wrappers" SCHEMA "extensions";
 CREATE SCHEMA IF NOT EXISTS "net";
 CREATE SCHEMA IF NOT EXISTS "pgmq";
+CREATE SCHEMA IF NOT EXISTS "supabase_functions";
 CREATE EXTENSION IF NOT EXISTS "pgmq" SCHEMA "pgmq";
 
 -- ====================================================================
