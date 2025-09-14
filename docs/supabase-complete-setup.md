@@ -128,13 +128,11 @@ SELECT * FROM public.cron_job_health;
 ### Required in Supabase Dashboard
 
 1. **Email Provider**
-
    - Enable email confirmations
    - Set OTP expiry to 24 hours
    - Configure SMTP settings
 
 2. **Google OAuth**
-
    - Add authorized redirect URLs:
      - `https://YOUR_PROJECT.supabase.co/auth/v1/callback`
      - Your app URLs from `additional_redirect_urls`
@@ -216,19 +214,16 @@ supabase db reset --project-ref PROJECT_ID
 ## Security Best Practices
 
 1. **Never commit secrets to git**
-
    - Use environment variables
    - Use Supabase secrets management
    - Use vault for database secrets
 
 2. **Rotate secrets regularly**
-
    - OAuth tokens
    - API keys
    - Encryption keys
 
 3. **Use RLS policies**
-
    - All tables should have RLS enabled
    - Service role should be used sparingly
 

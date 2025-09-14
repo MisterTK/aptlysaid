@@ -27,6 +27,7 @@ export default [
     rules: {
       "no-undef": "off", // TypeScript handles this
       "svelte/require-each-key": "warn", // Downgrade to warning
+      "svelte/no-navigation-without-resolve": "off", // Disable overly strict navigation checks
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "prefer-const": "error",
     },

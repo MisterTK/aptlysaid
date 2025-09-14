@@ -5,6 +5,7 @@
   import { invalidateAll } from "$app/navigation"
   import { fly, scale } from "svelte/transition"
   import { cubicOut } from "svelte/easing"
+  import { SvelteSet, SvelteMap } from "svelte/reactivity"
   import {
     formatReviewDate,
     getUserTimezone,
@@ -17,7 +18,7 @@
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("reviews")
 
-  let selectedReviewIds = $state<Set<string>>(new Set())
+  let selectedReviewIds = new SvelteSet<string>()
 
   // Filters and Sorting
   let selectedLocation = $state("all")
@@ -40,7 +41,7 @@
     hourlyRate?: number
   } | null>(null)
   let isPublishing = $state(false)
-  let publishingStates = $state<Map<string, boolean>>(new Map())
+  let publishingStates = new SvelteMap<string, boolean>()
   let publishError = $state<string | null>(null)
 
   // Publishing queue state
@@ -345,12 +346,12 @@
     filteredReviews.forEach((review) => {
       selectedReviewIds.add(review.id)
     })
-    selectedReviewIds = new Set(selectedReviewIds)
+    selectedReviewIds = new SvelteSet(selectedReviewIds)
   }
 
   function clearSelection() {
     selectedReviewIds.clear()
-    selectedReviewIds = new Set()
+    selectedReviewIds = new SvelteSet()
   }
 
   function toggleReviewSelection(reviewId: string) {
@@ -359,7 +360,7 @@
     } else {
       selectedReviewIds.add(reviewId)
     }
-    selectedReviewIds = new Set(selectedReviewIds)
+    selectedReviewIds = new SvelteSet(selectedReviewIds)
   }
 
   async function openPublishingModal() {
@@ -479,7 +480,7 @@
     if (!aiResponseId || publishingStates.get(aiResponseId)) return
 
     publishingStates.set(aiResponseId, true)
-    publishingStates = new Map(publishingStates)
+    publishingStates = new SvelteMap(publishingStates)
     publishError = null
 
     try {
@@ -503,7 +504,7 @@
       publishError = "Network error occurred"
     } finally {
       publishingStates.set(aiResponseId, false)
-      publishingStates = new Map(publishingStates)
+      publishingStates = new SvelteMap(publishingStates)
     }
   }
 

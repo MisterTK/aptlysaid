@@ -2,6 +2,7 @@
   // Removed unused createEventDispatcher import
   import { fly } from "svelte/transition"
   import { cubicOut } from "svelte/easing"
+  import { SvelteSet } from "svelte/reactivity"
   import type { FilterState } from "$lib/types"
 
   interface Props {
@@ -43,8 +44,8 @@
   // Removed unused editing guidance state variables
 
   // Filter states
-  let selectedStatuses = $state(new Set(filters.status))
-  let selectedRatings = $state(new Set(filters.rating.map((r) => r.toString())))
+  let selectedStatuses = new SvelteSet(filters.status)
+  let selectedRatings = new SvelteSet(filters.rating.map((r) => r.toString()))
   let selectedDateRange = $state(filters.dateRange || "last7days")
 
   // Animation states - removed unused guidanceHeight
@@ -55,7 +56,7 @@
     } else {
       selectedStatuses.add(status)
     }
-    selectedStatuses = new Set(selectedStatuses)
+    selectedStatuses = new SvelteSet(selectedStatuses)
     updateFilters()
   }
 
@@ -65,7 +66,7 @@
     } else {
       selectedRatings.add(rating)
     }
-    selectedRatings = new Set(selectedRatings)
+    selectedRatings = new SvelteSet(selectedRatings)
     updateFilters()
   }
 
@@ -227,7 +228,7 @@
                     selectedRatings.add("2")
                     selectedRatings.add("1")
                   }
-                  selectedRatings = new Set(selectedRatings)
+                  selectedRatings = new SvelteSet(selectedRatings)
                   updateFilters()
                 }}
               />
