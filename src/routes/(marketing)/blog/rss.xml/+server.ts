@@ -1,4 +1,5 @@
 import { sortedBlogPosts, blogInfo } from "../posts"
+import type { RequestHandler } from "./$types"
 
 const encodeXML = (str: string) =>
   str
@@ -8,7 +9,7 @@ const encodeXML = (str: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;")
 
-export function GET({ url }) {
+export const GET: RequestHandler = ({ url }) => {
   const headers = {
     "Cache-Control": "max-age=0, s-maxage=3600",
     "Content-Type": "application/xml",

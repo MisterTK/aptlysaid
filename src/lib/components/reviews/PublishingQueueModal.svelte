@@ -7,7 +7,6 @@
     queueItems: QueueItem[]
     stats: {
       queued: number
-      published: number
       todayPublished?: number
       todayLimit?: number
       hourlyRate?: number

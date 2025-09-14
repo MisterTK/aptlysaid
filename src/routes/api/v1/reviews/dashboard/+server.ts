@@ -47,7 +47,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
     const total = reviews?.length || 0
     const averageRating =
-      total > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / total : 0
+      total > 0 && reviews
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / total
+        : 0
 
     const reviewsWithReplies = reviews?.filter((r) => r.has_owner_reply) || []
     const responseRate =
@@ -108,11 +110,17 @@ export const GET: RequestHandler = async ({ url, locals }) => {
       mixed: 0,
     }
 
-    if (total > 0) {
+    if (total > 0 && reviews) {
       const sentimentCounts = reviews.reduce(
         (acc, r) => {
-          if (r.sentiment_label) {
-            acc[r.sentiment_label] = (acc[r.sentiment_label] || 0) + 1
+          if (
+            r.sentiment_label &&
+            ["positive", "neutral", "negative", "mixed"].includes(
+              r.sentiment_label,
+            )
+          ) {
+            acc[r.sentiment_label as keyof typeof acc] =
+              (acc[r.sentiment_label as keyof typeof acc] || 0) + 1
           } else {
             if (r.rating >= 4) acc.positive++
             else if (r.rating === 3) acc.neutral++
@@ -230,7 +238,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
           (r) => r.rating <= 2 || r.sentiment_label === "negative",
         ).length,
         highPriorityReviews:
-          reviews?.filter((r) => r.priority_score >= 80).length || 0,
+          reviews?.filter((r) => r.priority_score && r.priority_score >= 80)
+            .length || 0,
       },
     }
 

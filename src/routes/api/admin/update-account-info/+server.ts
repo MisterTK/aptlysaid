@@ -1,8 +1,6 @@
 import { json, error } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 import { GoogleMyBusinessWrapperV3 } from "$lib/services/google-my-business-wrapper-v2"
-import { env as privateEnv } from "$env/dynamic/private"
-import { env as publicEnv } from "$env/dynamic/public"
 
 interface AccountInfo {
   name: string
@@ -55,9 +53,9 @@ export const POST: RequestHandler = async ({
   )
 
   const gmb = new GoogleMyBusinessWrapperV3(supabaseServiceRole, {
-    clientId: publicEnv.PUBLIC_GOOGLE_CLIENT_ID,
-    clientSecret: privateEnv.GOOGLE_CLIENT_SECRET,
-    encryptionKey: privateEnv.TOKEN_ENCRYPTION_KEY,
+    clientId: process.env.PUBLIC_GOOGLE_CLIENT_ID!,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    encryptionKey: process.env.TOKEN_ENCRYPTION_KEY!,
   })
 
   let updatedCount = 0
@@ -79,7 +77,6 @@ export const POST: RequestHandler = async ({
 
       let freshAccessToken: string
       try {
-
         await service.getAccounts()
         const freshTokens = await gmb.getTokens(tokenData.tenant_id)
         if (!freshTokens) {
@@ -117,12 +114,10 @@ export const POST: RequestHandler = async ({
         )
 
         if (accountsData.accounts && accountsData.accounts.length > 0) {
-
           accountId = accountsData.accounts[0].name.replace("accounts/", "")
           accessLevel = "account"
           console.log(`Account-level access detected. Account ID: ${accountId}`)
         } else {
-
           accessLevel = "location"
           console.log("No accounts found - likely location-level access only")
         }
@@ -132,7 +127,6 @@ export const POST: RequestHandler = async ({
         )
 
         if (accountsResponse.status === 403) {
-
           accessLevel = "location"
           console.log("403 Forbidden - confirmed location-level access only")
         } else {

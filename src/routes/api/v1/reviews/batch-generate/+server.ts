@@ -22,20 +22,18 @@ export const POST: RequestHandler = async ({
   let targetReviewIds = reviewIds
 
   try {
-
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
     if (!targetReviewIds || targetReviewIds.length === 0) {
-
       const { reviews } = await v2Client.getReviews()
 
       targetReviewIds = reviews
         .filter(
           (review) =>
-            review.response_status === "pending" &&
+            review.needs_response === true &&
             (!review.ai_responses || review.ai_responses.length === 0),
         )
         .map((review) => review.id)

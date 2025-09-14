@@ -73,7 +73,6 @@ export class UserManagementService {
   }
 
   canManageRole(managerRole: UserRole, targetRole: UserRole): boolean {
-
     if (managerRole === "owner") {
       return targetRole !== "owner"
     }
@@ -245,7 +244,6 @@ export class UserManagementService {
     invitedBy: string,
     baseUrl: string,
   ): Promise<void> {
-
     const { data: existingMember } = await this.supabase.auth.admin.listUsers()
     const existingUser = existingMember.users.find(
       (user) => user.email === email,
@@ -338,7 +336,6 @@ export class UserManagementService {
   }
 
   async acceptInvitation(token: string, userId: string): Promise<string> {
-
     const { data: invitation, error: invitationError } = await this.supabase
       .from("tenant_invitations")
       .select("*")
@@ -359,7 +356,6 @@ export class UserManagementService {
       .single()
 
     if (existingMember) {
-
       console.log("User already a member, returning tenant ID")
       return invitation.tenant_id
     }
@@ -398,7 +394,6 @@ export class UserManagementService {
     newRole: UserRole,
     updatedBy: string,
   ): Promise<void> {
-
     const { data: currentMember } = await this.supabase
       .from("tenant_users")
       .select("role")
@@ -452,7 +447,6 @@ export class UserManagementService {
     tenantId: string,
     removedBy: string,
   ): Promise<void> {
-
     const { data: currentMember } = await this.supabase
       .from("tenant_users")
       .select("role")
@@ -502,7 +496,6 @@ export class UserManagementService {
     newOwnerId: string,
     tenantId: string,
   ): Promise<void> {
-
     const currentOwnerRole = await this.getUserRole(currentOwnerId, tenantId)
     if (currentOwnerRole !== "owner") {
       throw error(403, "Only the current owner can transfer ownership")
@@ -530,7 +523,6 @@ export class UserManagementService {
       .eq("tenant_id", tenantId)
 
     if (newOwnerError) {
-
       await this.supabase
         .from("tenant_users")
         .update({ role: "owner" })

@@ -34,8 +34,10 @@ export default defineConfig({
         manualChunks: (id) => {
           // Group node_modules into vendor chunk
           if (id.includes("node_modules")) {
-            return "vendor";
+            return "vendor"
           }
+          // Return undefined for other files to use default chunking
+          return undefined
         },
       },
     },

@@ -17,7 +17,6 @@ export const POST: RequestHandler = async ({
   }
 
   try {
-
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
@@ -43,7 +42,6 @@ export const POST: RequestHandler = async ({
 
     if (updateError) {
       console.error("Error updating tenant onboarding status:", updateError)
-
     }
 
     return json({

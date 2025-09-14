@@ -46,7 +46,6 @@ export const load: PageServerLoad = async ({
   } = subscriptionResult
 
   return {
-
     isActiveCustomer: hasActiveSubscription,
     hasEverHadSubscription,
     currentPlanId: primarySubscription?.appSubscription?.id,

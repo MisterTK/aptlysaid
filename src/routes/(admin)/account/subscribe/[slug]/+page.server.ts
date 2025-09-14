@@ -17,7 +17,6 @@ export const load: PageServerLoad = async ({
   }
 
   if (params.slug === "free_plan") {
-
     redirect(303, "/account")
   }
 
@@ -50,7 +49,6 @@ export const load: PageServerLoad = async ({
     primarySubscription &&
     (primarySubscription.isActive || primarySubscription.isTrialing)
   ) {
-
     redirect(303, "/account/billing")
   }
 

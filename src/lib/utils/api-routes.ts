@@ -1,6 +1,4 @@
-
 export const API_ROUTES = {
-
   reviews: "/api/v1/reviews",
   reviewsGenerate: "/api/v1/reviews/generate",
   reviewsBatchGenerate: "/api/v1/reviews/batch-generate",
@@ -37,7 +35,7 @@ export function getApiRoute(
 ): string {
   const route = API_ROUTES[key]
   if (typeof route === "function") {
-    return route(...args)
+    return (route as (...params: string[]) => string)(...args)
   }
-  return route
+  return route as string
 }

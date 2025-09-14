@@ -20,7 +20,6 @@ export const GET: RequestHandler = async ({
   const locationId = url.searchParams.get("locationId")
 
   try {
-
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
@@ -31,26 +30,26 @@ export const GET: RequestHandler = async ({
     const transformedReviews = reviews.map((review) => ({
       reviewId: review.platform_review_id,
       name: review.platform_review_id,
-      locationName: review.location_name || review.location_id,
+      locationName: review.location?.name || review.location_id,
       reviewer: {
-        displayName: review.author_name,
-        profilePhotoUrl: review.author_avatar_url,
+        displayName: review.reviewer_name,
+        profilePhotoUrl: review.reviewer_avatar_url,
       },
       starRating: review.rating.toString(),
       comment: review.review_text,
-      reviewReply: review.published_response_id
+      reviewReply: review.ai_responses?.find((r) => r.status === "published")
         ? {
-            comment: review.ai_responses?.find(
-              (r) => r.id === review.published_response_id,
-            )?.content,
+            comment: review.ai_responses?.find((r) => r.status === "published")
+              ?.response_text,
           }
         : null,
-      createTime: review.reviewed_at,
+      createTime: review.review_date,
       updateTime: review.updated_at,
 
       _v2: {
         id: review.id,
-        response_status: review.response_status,
+        status: review.status,
+        needs_response: review.needs_response,
         ai_responses: review.ai_responses,
       },
     }))
@@ -90,17 +89,15 @@ export const POST: RequestHandler = async ({
   }
 
   try {
-
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })
     }
 
-    let result: unknown
+    let result: Record<string, unknown> = {}
 
     switch (action) {
       case "generate":
-
         result = await v2Client.generateAiResponse(reviewId)
         break
 

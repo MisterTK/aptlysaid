@@ -1,6 +1,6 @@
 import { json } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
-import { V2ApiClient } from "$lib/services/v2-api-client"
+import { V2ApiClient, type V2Workflow } from "$lib/services/v2-api-client"
 
 export const GET: RequestHandler = async ({
   url,
@@ -35,7 +35,7 @@ export const GET: RequestHandler = async ({
     const recentWorkflows = workflows.filter((w) => w.created_at >= oneDayAgo)
 
     const workflowStats = recentWorkflows.reduce(
-      (acc: Record<string, number>, workflow: unknown) => {
+      (acc: Record<string, number>, workflow: V2Workflow) => {
         const key = `${workflow.workflow_type}_${workflow.status}`
         acc[key] = (acc[key] || 0) + 1
         return acc

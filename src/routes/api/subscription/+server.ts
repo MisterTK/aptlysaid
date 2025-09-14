@@ -42,7 +42,6 @@ export const GET: RequestHandler = async ({
 
     if (pmError) {
       console.error("Error fetching payment methods:", pmError)
-
     }
 
     return json({
@@ -173,8 +172,8 @@ export const POST: RequestHandler = async ({
         return json({
           success: true,
           invoice: result.invoice,
-          prorationAmount: result.invoice?.total || 0,
-          currency: result.invoice?.currency || "usd",
+          prorationAmount: 0, // Unable to calculate proration without invoice API
+          currency: "usd", // Default currency
         })
       }
 

@@ -16,7 +16,6 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-
     const { data: queueItems, error } = await supabaseServiceRole
       .from("response_queue")
       .select(
@@ -125,7 +124,15 @@ export const POST: RequestHandler = async ({
       .eq("tenant_id", tenantId)
       .single()
 
-    const delaySeconds = settings?.response_delay || 30
+    // Extract delay from rate_limits or settings JSON, or default to 30 seconds
+    let delaySeconds = 30
+    if (settings?.rate_limits) {
+      const rateLimits = settings.rate_limits as Record<string, unknown>
+      delaySeconds = (rateLimits?.response_delay as number) || delaySeconds
+    } else if (settings?.settings) {
+      const settingsJson = settings.settings as Record<string, unknown>
+      delaySeconds = (settingsJson?.response_delay as number) || delaySeconds
+    }
     const scheduledFor = new Date(Date.now() + delaySeconds * 1000)
 
     const { data: newItem, error: insertError } = await supabaseServiceRole
@@ -171,7 +178,6 @@ export const PATCH: RequestHandler = async ({
     const { action } = await request.json()
 
     if (action === "pause") {
-
       const { error } = await supabaseServiceRole
         .from("response_queue")
         .update({ status: "cancelled" })
@@ -181,7 +187,6 @@ export const PATCH: RequestHandler = async ({
       if (error) throw error
       return json({ success: true })
     } else if (action === "resume") {
-
       const { error } = await supabaseServiceRole
         .from("response_queue")
         .update({ status: "pending" })

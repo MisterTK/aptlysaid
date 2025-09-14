@@ -14,7 +14,6 @@ export interface VertexAIConfig {
 }
 
 export function createVertexAI(config: VertexAIConfig = {}) {
-
   const credentials = setupGoogleCloudCredentials()
 
   let googleAuthOptions = config.googleAuthOptions

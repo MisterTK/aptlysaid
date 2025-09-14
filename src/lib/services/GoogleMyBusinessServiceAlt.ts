@@ -91,7 +91,6 @@ export class GoogleMyBusinessServiceAlt {
     })
 
     if (response.status === 401) {
-
       await this.refreshAccessToken()
 
       return fetch(url, {
@@ -155,7 +154,6 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getLocations(accountId: string): Promise<BusinessLocation[]> {
-
     const cleanAccountId = accountId.replace("accounts/", "")
 
     const response = await this.makeRequest(
@@ -172,7 +170,6 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getLocationsForAccount(accountId: string): Promise<BusinessLocation[]> {
-
     return this.getLocations(accountId)
   }
 
@@ -204,7 +201,6 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getInvitations(): Promise<Invitation[]> {
-
     const allInvitations: Invitation[] = []
 
     try {
@@ -225,7 +221,6 @@ export class GoogleMyBusinessServiceAlt {
               allInvitations.push(...data.invitations)
             }
           } else {
-
             console.error(
               `Failed to fetch invitations for account ${accountName}:`,
               await response.text(),
@@ -265,7 +260,6 @@ export class GoogleMyBusinessServiceAlt {
 
   async getAllAccessibleLocations(): Promise<BusinessLocation[]> {
     try {
-
       const wildcardLocations = await this.getAllLocationsWithWildcard()
 
       if (wildcardLocations.length > 0) {
@@ -323,7 +317,6 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getReviews(accountId: string, locationId: string): Promise<Review[]> {
-
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
 
@@ -341,7 +334,6 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getReviewsByLocationName(locationName: string): Promise<Review[]> {
-
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_API}/${locationName}/reviews`,
     )
@@ -369,7 +361,6 @@ export class GoogleMyBusinessServiceAlt {
     reviewId: string,
     comment: string,
   ): Promise<boolean> {
-
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
@@ -415,7 +406,6 @@ export class GoogleMyBusinessServiceAlt {
     locationId: string,
     reviewId: string,
   ): Promise<boolean> {
-
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
@@ -455,7 +445,6 @@ export class GoogleMyBusinessServiceAlt {
   }
 
   async getBusinessInfo(accountId: string, locationId: string) {
-
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
 

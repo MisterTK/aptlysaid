@@ -1,4 +1,3 @@
-
 import { redirect } from "@sveltejs/kit"
 import { isAuthApiError } from "@supabase/supabase-js"
 import { UserManagementService } from "$lib/server/user-management"
@@ -26,7 +25,7 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
 
       if (invitationToken && user) {
         try {
-          console.log(
+          console.warn(
             "Processing invitation for user:",
             user.id,
             "token:",
@@ -41,19 +40,18 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
             .single()
 
           if (invitation && invitation.status === "accepted") {
-            console.log(
+            console.warn(
               "Invitation already accepted, setting tenant and redirecting",
             )
             setCurrentTenant(invitation.tenant_id, cookies)
             redirect(303, "/account?invited=true")
           } else {
-
             const tenantId = await userMgmt.acceptInvitation(
               invitationToken,
               user.id,
             )
             setCurrentTenant(tenantId, cookies)
-            console.log(
+            console.warn(
               "Invitation accepted successfully, redirecting to account",
             )
             redirect(303, "/account?invited=true")
@@ -65,7 +63,6 @@ export const GET = async ({ url, locals: { supabase }, cookies }) => {
         }
       }
     } catch (error) {
-
       if (isAuthApiError(error)) {
         const redirectUrl = invitationToken
           ? `/login/sign_in?invitation=${invitationToken}&verified=true`

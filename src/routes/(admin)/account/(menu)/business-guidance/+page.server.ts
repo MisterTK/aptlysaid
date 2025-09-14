@@ -68,7 +68,6 @@ export const actions: Actions = {
         keyMessaging = parsed.responseGuidelines || []
         prohibitedWords = parsed.thingsToAvoid || []
       } catch {
-
         brandVoice = guidanceText
       }
 
@@ -92,7 +91,6 @@ export const actions: Actions = {
       let data, error
 
       if (existingGuidance) {
-
         const updateData = {
           brand_voice: brandVoice,
           key_messaging: keyMessaging,
@@ -112,7 +110,6 @@ export const actions: Actions = {
         data = result.data
         error = result.error
       } else {
-
         const insertData = {
           tenant_id: orgId,
           brand_voice: brandVoice,

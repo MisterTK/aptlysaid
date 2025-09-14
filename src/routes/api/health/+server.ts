@@ -2,7 +2,9 @@ import { json } from "@sveltejs/kit"
 import type { RequestHandler } from "./$types"
 import pkg from "../../../../package.json"
 
-export const GET: RequestHandler = async ({ locals: { supabase, supabaseServiceRole } }) => {
+export const GET: RequestHandler = async ({
+  locals: { supabase, supabaseServiceRole },
+}) => {
   const checks = {
     status: "healthy",
     version: pkg.version,
@@ -15,9 +17,6 @@ export const GET: RequestHandler = async ({ locals: { supabase, supabaseServiceR
   }
 
   try {
-
-    const usingServiceRole = !!supabaseServiceRole
-    
     if (supabaseServiceRole) {
       checks.checks.database = "ok (service role available)"
     } else if (supabase) {

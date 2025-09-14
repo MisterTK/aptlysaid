@@ -1,11 +1,8 @@
-
-
 interface DateFormatOptions {
-  
   showTimezone?: boolean
-  
+
   userTimezone?: string
-  
+
   showAbsoluteTime?: boolean
 }
 
@@ -20,7 +17,6 @@ export function formatReviewDate(
   } = options
 
   try {
-
     const reviewDate = new Date(dateString)
 
     if (isNaN(reviewDate.getTime())) {
@@ -146,7 +142,6 @@ export function formatFullDateTime(
   showTimezone = true,
 ): string {
   try {
-
     if (!date || isNaN(date.getTime())) {
       return "Invalid date"
     }
@@ -180,7 +175,6 @@ export function getUserTimezone(): string {
 }
 
 export function parseGoogleTimestamp(timestamp: string): Date {
-
   return new Date(timestamp)
 }
 

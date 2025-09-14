@@ -34,7 +34,6 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
   console.warn("Building search index...")
 
   for (const filePath of filteredFiles) {
-
     const html = fs.readFileSync(filePath, "utf-8")
 
     const body = convert(html)
@@ -67,7 +66,7 @@ export async function buildSearchIndex(): Promise<SearchIndexData> {
     indexData.push(indexEntry)
 
     if (indexData.length < 20) {
-
+      // TODO: Add debug logging or other functionality for small index sizes
     }
   }
 

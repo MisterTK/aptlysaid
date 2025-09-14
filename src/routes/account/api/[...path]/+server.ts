@@ -33,7 +33,7 @@ export const POST: RequestHandler = async ({ url, fetch, request }) => {
     headers: headers,
     body: clonedRequest.body,
     duplex: "half",
-  })
+  } as RequestInit)
 }
 
 export const PUT: RequestHandler = async ({ url, fetch, request }) => {
@@ -55,7 +55,7 @@ export const PUT: RequestHandler = async ({ url, fetch, request }) => {
     headers: headers,
     body: clonedRequest.body,
     duplex: "half",
-  })
+  } as RequestInit)
 }
 
 export const PATCH: RequestHandler = async ({ url, fetch, request }) => {
@@ -77,7 +77,7 @@ export const PATCH: RequestHandler = async ({ url, fetch, request }) => {
     headers: headers,
     body: clonedRequest.body,
     duplex: "half",
-  })
+  } as RequestInit)
 }
 
 export const DELETE: RequestHandler = async ({ url, fetch, request }) => {

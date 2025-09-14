@@ -8,8 +8,6 @@
 
   interface Props {
     data: {
-      tenant: unknown
-      user: unknown
       onboardingStatus?: unknown
       workflowExecution?: unknown
     }

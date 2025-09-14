@@ -3,6 +3,20 @@ import { GoogleMyBusinessWrapperV3 } from "../services/google-my-business-wrappe
 
 import type { Database } from "../../DatabaseDefinitions"
 
+interface BusinessLocation {
+  name: string
+  locationId: string
+  title?: string
+  address?:
+    | {
+        addressLines?: string[]
+      }
+    | string
+  primaryPhone?: string
+  websiteUrl?: string
+  accountId?: string
+}
+
 const starRatingToNumber = (rating: string): number => {
   const ratingMap: Record<string, number> = {
     ONE: 1,
@@ -49,7 +63,7 @@ export async function syncUnansweredReviews() {
       })
 
       const accounts = await gmb.listAccounts(org.tenant_id!)
-      const locations: unknown[] = []
+      const locations: BusinessLocation[] = []
       for (const account of accounts) {
         const accountLocations = await gmb.listLocations(
           org.tenant_id!,

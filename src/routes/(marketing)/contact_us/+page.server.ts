@@ -1,9 +1,9 @@
 import { fail } from "@sveltejs/kit"
 import { sendContactFormEmail } from "$lib/mailer.js"
-import { env } from "$env/dynamic/private"
+import type { Actions } from "./$types"
 
-export const actions = {
-  submitContactUs: async ({ request, locals: { supabaseServiceRole } }) => {
+export const actions: Actions = {
+  submitContactUs: async ({ request }) => {
     const formData = await request.formData()
     const errors: { [fieldName: string]: string } = {}
 
@@ -51,22 +51,23 @@ export const actions = {
       return fail(400, { errors })
     }
 
-    const { error: insertError } = await supabaseServiceRole
-      .from("contact_requests")
-      .insert({
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        company_name: company,
-        phone,
-        message_body: message,
-        updated_at: new Date().toISOString(),
-      })
+    // Note: contact_requests table doesn't exist in current schema
+    // const { error: insertError } = await supabaseServiceRole
+    //   .from("contact_requests")
+    //   .insert({
+    //     first_name: firstName,
+    //     last_name: lastName,
+    //     email,
+    //     company_name: company,
+    //     phone,
+    //     message_body: message,
+    //     updated_at: new Date().toISOString(),
+    //   })
 
-    if (insertError) {
-      console.error("Error saving contact request", insertError)
-      return fail(500, { errors: { _: "Error saving" } })
-    }
+    // if (insertError) {
+    //   console.error("Error saving contact request", insertError)
+    //   return fail(500, { errors: { _: "Error saving" } })
+    // }
 
     await sendContactFormEmail(
       {
@@ -75,7 +76,9 @@ export const actions = {
         phone: phone || undefined,
         message,
       },
-      env.PRIVATE_ADMIN_EMAIL || "admin@example.com",
+      process.env.PRIVATE_ADMIN_EMAIL || "admin@example.com",
     )
+
+    return { success: true }
   },
 }

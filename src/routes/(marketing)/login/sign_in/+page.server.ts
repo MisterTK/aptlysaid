@@ -5,14 +5,13 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 
   if (invitationToken) {
     try {
-
       const { data: invitation, error } = await supabase
-        .from("organization_invitations")
+        .from("tenant_invitations")
         .select(
           `
           email,
           role,
-          organization:organizations!inner(name)
+          tenant:tenants!inner(name)
         `,
         )
         .eq("token", invitationToken)
@@ -27,7 +26,7 @@ export const load: PageServerLoad = async ({ url, locals: { supabase } }) => {
 
       return {
         invitationDetails: {
-          organizationName: invitation.organization.name,
+          organizationName: invitation.tenant.name,
           role: invitation.role,
           email: invitation.email,
         },

@@ -62,7 +62,6 @@ export class GoogleMyBusinessWrapperV3 {
     console.log("🔐 [V3 Wrapper] Starting token decryption")
 
     try {
-
       const encryptedBuffer = Buffer.from(encryptedString, "base64")
 
       const iv = encryptedBuffer.slice(0, 16)
@@ -82,8 +81,10 @@ export class GoogleMyBusinessWrapperV3 {
       console.log("✅ [V3 Wrapper] Token decryption successful")
       return decrypted.toString("utf8")
     } catch (error) {
-      console.error("❌ [V3 Wrapper] Token decryption failed:", error.message)
-      throw new Error(`Token decryption failed: ${error.message}`)
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error"
+      console.error("❌ [V3 Wrapper] Token decryption failed:", errorMessage)
+      throw new Error(`Token decryption failed: ${errorMessage}`)
     }
   }
 
@@ -210,7 +211,6 @@ export class GoogleMyBusinessWrapperV3 {
 
     if (linkError) {
       console.error("V3 Error linking locations to OAuth token:", linkError)
-
     }
 
     if (!hasBusinessManageScope) {
@@ -406,7 +406,6 @@ export class GoogleMyBusinessWrapperV3 {
     isValid: boolean,
     reason: string,
   ): Promise<void> {
-
     console.log(
       `[V3 Token Validation] ${organizationId}: ${isValid ? "✅" : "❌"} ${reason}`,
     )
@@ -426,11 +425,11 @@ export class GoogleMyBusinessWrapperV3 {
       .limit(1)
       .single()
 
-    if (anyToken) {
+    if (unknownToken) {
       console.log(`V3 Token status check for ${organizationId}:`, {
         status: unknownToken.status,
         expires_at: unknownToken.expires_at,
-        isExpired: new Date(anyToken.expires_at) < new Date(),
+        isExpired: new Date(unknownToken.expires_at) < new Date(),
       })
     }
 
@@ -450,16 +449,15 @@ export class GoogleMyBusinessWrapperV3 {
       console.log(
         `V3 No active OAuth tokens found for organization ${organizationId}: ${error?.message || "No data"}`,
       )
-      if (anyToken) {
+      if (unknownToken) {
         console.log(
-          `V3 Token exists but is not active. Status: ${anyToken.status}`,
+          `V3 Token exists but is not active. Status: ${unknownToken.status}`,
         )
       }
       return null
     }
 
     try {
-
       const accessToken = this.decrypt(data.encrypted_access_token)
       const refreshToken = this.decrypt(data.encrypted_refresh_token)
 
@@ -652,7 +650,6 @@ export class GoogleMyBusinessWrapperV3 {
         `V3 Location OAuth token clearing failed for organization ${organizationId}:`,
         locationError,
       )
-
     }
 
     console.log(

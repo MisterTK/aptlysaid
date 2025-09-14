@@ -16,7 +16,6 @@ export const load: PageServerLoad = async ({
   }
 
   try {
-
     const { data: workflows, error: workflowsError } = await supabaseServiceRole
       .from("workflows")
       .select(
@@ -56,13 +55,17 @@ export const load: PageServerLoad = async ({
         new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       )
 
-    const workflowStats = (stats || []).reduce(
+    const workflowStats = (
+      (stats as { workflow_type: string; status: string }[]) || []
+    ).reduce(
       (
         acc: Record<string, number>,
         workflow: { workflow_type: string; status: string },
       ) => {
-        const key = `${workflow.workflow_type}_${workflow.status}`
-        acc[key] = (acc[key] || 0) + 1
+        if (workflow.workflow_type && workflow.status) {
+          const key = `${workflow.workflow_type}_${workflow.status}`
+          acc[key] = (acc[key] || 0) + 1
+        }
         return acc
       },
       {} as Record<string, number>,

@@ -1,4 +1,4 @@
-import { env } from "$env/dynamic/public"
+// Import removed - using process.env directly
 import {
   createBrowserClient,
   createServerClient,
@@ -6,36 +6,46 @@ import {
 } from "@supabase/ssr"
 import { redirect } from "@sveltejs/kit"
 import type { Database } from "../../../DatabaseDefinitions.js"
+import type { Session } from "@supabase/supabase-js"
 import { CreateProfileStep } from "../../../config"
 import { load_helper } from "$lib/load_helpers"
 
-export const load = async ({ fetch, data, depends, url }) => {
+export const load = async ({
+  fetch,
+  data,
+  depends,
+  url,
+}: {
+  fetch: typeof globalThis.fetch
+  data: {
+    session: Session | null
+    cookies: Array<{ name: string; value: string }>
+  }
+  depends: (dependency: string) => void
+  url: URL
+}) => {
   depends("supabase:auth")
 
+  const supabaseUrl =
+    process.env.PUBLIC_SUPABASE_URL || "https://your-project.supabase.co"
+  const supabaseKey = process.env.PUBLIC_SUPABASE_ANON_KEY || ""
+
   const supabase = isBrowser()
-    ? createBrowserClient(
-        env.PUBLIC_SUPABASE_URL,
-        env.PUBLIC_SUPABASE_ANON_KEY,
-        {
-          global: {
-            fetch,
+    ? createBrowserClient(supabaseUrl, supabaseKey, {
+        global: {
+          fetch,
+        },
+      })
+    : createServerClient(supabaseUrl, supabaseKey, {
+        global: {
+          fetch,
+        },
+        cookies: {
+          getAll() {
+            return data.cookies
           },
         },
-      )
-    : createServerClient(
-        env.PUBLIC_SUPABASE_URL,
-        env.PUBLIC_SUPABASE_ANON_KEY,
-        {
-          global: {
-            fetch,
-          },
-          cookies: {
-            getAll() {
-              return data.cookies
-            },
-          },
-        },
-      )
+      })
 
   const { session, user } = await load_helper(data.session, supabase)
   if (!session || !user) {
@@ -77,7 +87,6 @@ export const load = async ({ fetch, data, depends, url }) => {
     url.pathname !== signOutPath &&
     CreateProfileStep
   ) {
-
     const profileUrl = new URL(createProfilePath, url.origin)
     if (shouldSkipCompanyInfo) {
       profileUrl.searchParams.set("invited", "true")
@@ -109,7 +118,13 @@ export const _hasFullProfile = (
     return true
   }
 
-  if (!profile.website) {
+  if (
+    !(
+      profile as Database["public"]["Tables"]["profiles"]["Row"] & {
+        website?: string
+      }
+    ).website
+  ) {
     return false
   }
 

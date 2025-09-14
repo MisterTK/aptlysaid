@@ -17,7 +17,6 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-
     const v2Client = await V2ApiClient.create(supabase)
     if (!v2Client) {
       return json({ error: "Failed to create API client" }, { status: 500 })

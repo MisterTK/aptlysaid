@@ -1,6 +1,12 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad } from "./$types"
 import { GoogleMyBusinessWrapperV3 } from "$lib/services/google-my-business-wrapper-v2"
+import type {
+  SupabaseClient,
+  Session,
+  User,
+  AMREntry,
+} from "@supabase/supabase-js"
 
 const publicEnv = process.env
 const privateEnv = process.env
@@ -26,7 +32,6 @@ export const load: PageServerLoad = async ({
       : null
 
   if (!orgMemberships) {
-
     redirect(303, "/account/create-organization")
   }
 
@@ -63,7 +68,18 @@ export const load: PageServerLoad = async ({
 }
 
 export const actions = {
-  signout: async ({ locals: { supabase, safeGetSession } }) => {
+  signout: async ({
+    locals: { supabase, safeGetSession },
+  }: {
+    locals: {
+      supabase: SupabaseClient
+      safeGetSession: () => Promise<{
+        session: Session | null
+        user: User | null
+        amr: AMREntry[] | null
+      }>
+    }
+  }) => {
     const { session } = await safeGetSession()
     if (session) {
       await supabase.auth.signOut()

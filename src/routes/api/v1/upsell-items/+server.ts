@@ -16,7 +16,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   const adminClient = createAdminClient()
 
   try {
-
     const { data: membership } = await adminClient
       .from("tenant_users")
       .select("role")
@@ -56,13 +55,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const adminClient = createAdminClient()
 
   try {
-    const {
-      tenantId,
-      name,
-      description,
-      priority = 0,
-      isActive = true,
-    } = await request.json()
+    const { tenantId, name, description, priority = 0 } = await request.json()
 
     if (!tenantId || !name) {
       return json({ error: "Missing required fields" }, { status: 400 })
@@ -82,10 +75,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     const { data: item, error } = await adminClient
       .from("upsell_items")
       .insert({
+        name,
         call_to_action: name,
         promotion_text: description,
         priority,
-        tenant_id: session.user.tenant_id || "",
+        tenant_id: tenantId,
       })
       .select()
       .single()

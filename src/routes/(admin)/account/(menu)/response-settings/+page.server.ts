@@ -59,7 +59,13 @@ export const load: PageServerLoad = async ({
 
   let next_publish_time = null
   if (settings?.auto_publish_enabled && (pending || 0) > 0) {
-    const delay = settings.auto_publish_delay_hours || 1
+    const settingsJson = settings.settings as Record<string, unknown> | null
+    const delay =
+      typeof settingsJson === "object" &&
+      settingsJson &&
+      "auto_publish_delay_hours" in settingsJson
+        ? (settingsJson.auto_publish_delay_hours as number)
+        : 1
     next_publish_time = new Date(
       Date.now() + delay * 60 * 60 * 1000,
     ).toISOString()

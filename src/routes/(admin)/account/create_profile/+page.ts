@@ -1,7 +1,8 @@
 import { _hasFullProfile } from "../+layout.js"
 import { redirect } from "@sveltejs/kit"
+import type { LoadEvent } from "@sveltejs/kit"
 
-export async function load({ parent, url }) {
+export async function load({ parent, url }: LoadEvent) {
   const data = await parent()
 
   const isInvitedUser = url.searchParams.get("invited") === "true"
@@ -21,10 +22,8 @@ export async function load({ parent, url }) {
 
   if (_hasFullProfile(data?.profile, shouldSkipCompanyInfo)) {
     if (shouldSkipCompanyInfo) {
-
       redirect(303, "/account")
     } else {
-
       redirect(303, "/account/select_plan")
     }
   }

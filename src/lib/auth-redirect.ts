@@ -1,4 +1,3 @@
-
 export function getAuthRedirectUrl(request: Request): string {
   const url = new URL(request.url)
   const origin = url.origin
@@ -7,7 +6,6 @@ export function getAuthRedirectUrl(request: Request): string {
     origin.includes("vercel.app") &&
     !origin.includes("reviews-dusky.vercel.app")
   ) {
-
     return `${origin}/auth/callback`
   }
 

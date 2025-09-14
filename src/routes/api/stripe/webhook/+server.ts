@@ -1,6 +1,7 @@
 import { error, json } from "@sveltejs/kit"
 import Stripe from "stripe"
 import type { RequestHandler } from "./$types"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
 let stripe: Stripe | null = null
 function getStripe() {
@@ -10,7 +11,7 @@ function getStripe() {
       throw new Error("PRIVATE_STRIPE_API_KEY is not set")
     }
     stripe = new Stripe(apiKey, {
-      apiVersion: "2024-12-18.acacia",
+      apiVersion: "2025-05-28.basil",
       maxNetworkRetries: 3,
       timeout: 10000,
       appInfo: {
@@ -27,9 +28,7 @@ export const POST: RequestHandler = async ({
   request,
   locals: { supabaseServiceRole },
 }) => {
-  const supabase = supabaseServiceRole
   try {
-
     const webhookSecret =
       import.meta.env?.PRIVATE_STRIPE_WEBHOOK_SECRET ||
       process.env.PRIVATE_STRIPE_WEBHOOK_SECRET
@@ -54,9 +53,13 @@ export const POST: RequestHandler = async ({
         signature,
         webhookSecret,
       )
-    } catch (err) {
-      console.error("Webhook signature verification failed:", err.message)
-      error(400, `Webhook Error: ${err.message}`)
+    } catch (err: unknown) {
+      const errorMessage =
+        err && typeof err === "object" && "message" in err
+          ? String(err.message)
+          : String(err)
+      console.error("Webhook signature verification failed:", errorMessage)
+      error(400, `Webhook Error: ${errorMessage}`)
     }
 
     console.log(`Received webhook event: ${event.type} (${event.id})`)
@@ -65,18 +68,21 @@ export const POST: RequestHandler = async ({
       case "customer.subscription.created":
         await handleSubscriptionCreated(
           event.data.object as Stripe.Subscription,
+          supabaseServiceRole,
         )
         break
 
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(
           event.data.object as Stripe.Subscription,
+          supabaseServiceRole,
         )
         break
 
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(
           event.data.object as Stripe.Subscription,
+          supabaseServiceRole,
         )
         break
 
@@ -85,11 +91,17 @@ export const POST: RequestHandler = async ({
         break
 
       case "invoice.payment_failed":
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice)
+        await handleInvoicePaymentFailed(
+          event.data.object as Stripe.Invoice,
+          supabaseServiceRole,
+        )
         break
 
       case "customer.subscription.trial_will_end":
-        await handleTrialWillEnd(event.data.object as Stripe.Subscription)
+        await handleTrialWillEnd(
+          event.data.object as Stripe.Subscription,
+          supabaseServiceRole,
+        )
         break
 
       case "checkout.session.completed":
@@ -111,22 +123,27 @@ export const POST: RequestHandler = async ({
     }
 
     return json({ received: true, event_id: event.id })
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("Webhook processing error:", err)
 
-    if (err.status) {
-      error(err.status, err.body || "Webhook processing failed")
+    if (err && typeof err === "object" && "status" in err) {
+      const status = typeof err.status === "number" ? err.status : 500
+      const body =
+        "body" in err ? String(err.body) : "Webhook processing failed"
+      error(status, body)
     }
 
     error(500, "Internal webhook error")
   }
 }
 
-async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
+async function handleSubscriptionCreated(
+  subscription: Stripe.Subscription,
+  supabase: SupabaseClient,
+) {
   console.log(`Subscription created: ${subscription.id}`)
 
   try {
-
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -156,11 +173,13 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   }
 }
 
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription,
+  supabase: SupabaseClient,
+) {
   console.log(`Subscription updated: ${subscription.id}`)
 
   try {
-
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -180,28 +199,27 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       metadata: {
         status: subscription.status,
         cancel_at_period_end: subscription.cancel_at_period_end,
-        current_period_end: subscription.current_period_end,
         plan_id: subscription.items.data[0]?.price?.id,
       },
     })
 
     if (subscription.status === "canceled") {
       console.log(`Subscription canceled for user: ${customer.id}`)
-
     } else if (subscription.status === "past_due") {
       console.log(`Subscription past due for user: ${customer.id}`)
-
     }
   } catch (error) {
     console.error("Error handling subscription updated:", error)
   }
 }
 
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  supabase: SupabaseClient,
+) {
   console.log(`Subscription deleted: ${subscription.id}`)
 
   try {
-
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -235,10 +253,8 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
 
   try {
     if (invoice.billing_reason === "subscription_create") {
-
       console.log("First payment completed for new subscription")
     } else if (invoice.billing_reason === "subscription_cycle") {
-
       console.log("Recurring payment completed")
     }
 
@@ -246,7 +262,7 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
       event_type: "invoice.payment_succeeded",
       user_id: null,
       stripe_customer_id: invoice.customer as string,
-      subscription_id: invoice.subscription as string,
+      subscription_id: null,
       metadata: {
         amount_paid: invoice.amount_paid,
         currency: invoice.currency,
@@ -258,11 +274,13 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   }
 }
 
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+async function handleInvoicePaymentFailed(
+  invoice: Stripe.Invoice,
+  supabase: SupabaseClient,
+) {
   console.log(`Invoice payment failed: ${invoice.id}`)
 
   try {
-
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -273,7 +291,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
       event_type: "invoice.payment_failed",
       user_id: customer?.id || null,
       stripe_customer_id: invoice.customer as string,
-      subscription_id: invoice.subscription as string,
+      subscription_id: null,
       metadata: {
         amount_due: invoice.amount_due,
         currency: invoice.currency,
@@ -284,18 +302,19 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
     if (customer) {
       console.log(`Payment failed for user: ${customer.id}`)
-
     }
   } catch (error) {
     console.error("Error handling invoice payment failed:", error)
   }
 }
 
-async function handleTrialWillEnd(subscription: Stripe.Subscription) {
+async function handleTrialWillEnd(
+  subscription: Stripe.Subscription,
+  supabase: SupabaseClient,
+) {
   console.log(`Trial will end: ${subscription.id}`)
 
   try {
-
     const { data: customer } = await supabase
       .from("stripe_customers")
       .select("id")
@@ -318,7 +337,6 @@ async function handleTrialWillEnd(subscription: Stripe.Subscription) {
     })
 
     console.log(`Trial ending soon for user: ${customer.id}`)
-
   } catch (error) {
     console.error("Error handling trial will end:", error)
   }
@@ -330,7 +348,6 @@ async function handleCheckoutSessionCompleted(
   console.log(`Checkout session completed: ${session.id}`)
 
   try {
-
     await logWebhookEvent({
       event_type: "checkout.session.completed",
       user_id: session.metadata?.user_id || null,
@@ -356,7 +373,6 @@ async function handleCustomerCreated(customer: Stripe.Customer) {
   console.log(`Customer created: ${customer.id}`)
 
   try {
-
     await logWebhookEvent({
       event_type: "customer.created",
       user_id: customer.metadata?.user_id || null,
@@ -376,7 +392,6 @@ async function handleCustomerUpdated(customer: Stripe.Customer) {
   console.log(`Customer updated: ${customer.id}`)
 
   try {
-
     await logWebhookEvent({
       event_type: "customer.updated",
       user_id: customer.metadata?.user_id || null,
@@ -406,7 +421,6 @@ async function logWebhookEvent({
   metadata: Record<string, unknown>
 }) {
   try {
-
     console.log("Webhook Event:", {
       event_type,
       user_id,
@@ -415,7 +429,6 @@ async function logWebhookEvent({
       metadata,
       timestamp: new Date().toISOString(),
     })
-
   } catch (error) {
     console.error("Error logging webhook event:", error)
   }

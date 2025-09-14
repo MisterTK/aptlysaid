@@ -10,28 +10,31 @@ export interface V2Review {
   location_id: string
   location_name?: string
   platform_review_id: string
-  author_name: string
-  author_avatar_url?: string
+  reviewer_name: string
+  reviewer_avatar_url?: string
   rating: number
   review_text: string
   review_date: string
   response_text?: string
-  sentiment?: string
+  sentiment_label?: string
   sentiment_score?: number
   keywords?: string[]
-  language?: string
+  review_language?: string
   priority_score?: number
   platform_data?: Record<string, unknown>
+  status?: string
+  needs_response?: boolean
   created_at: string
   updated_at: string
   ai_responses?: V2AiResponse[]
+  location?: { name: string }
 }
 
 export interface V2AiResponse {
   id: string
   review_id: string
   tenant_id: string
-  content: string
+  response_text: string
   status: "draft" | "approved" | "rejected" | "published"
   confidence_score: number
   rejection_reason?: string
@@ -147,7 +150,7 @@ export class V2ApiClient {
       throw new Error("No authentication session")
     }
 
-    const v2ApiUrl = `${this.supabase.supabaseUrl}/functions/v1/v2-api`
+    const v2ApiUrl = `${(this.supabase as unknown as { supabaseUrl: string }).supabaseUrl}/functions/v1/v2-api`
 
     const response = await fetch(`${v2ApiUrl}${endpoint}`, {
       ...options,
@@ -400,7 +403,6 @@ export class V2ApiClient {
   }
 
   static async create(supabase: SupabaseClient): Promise<V2ApiClient | null> {
-
     const {
       data: { session },
     } = await supabase.auth.getSession()

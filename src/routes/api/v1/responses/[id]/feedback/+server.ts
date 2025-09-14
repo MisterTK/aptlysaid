@@ -40,29 +40,18 @@ export const POST: RequestHandler = async ({
         rejected_at: new Date().toISOString(),
         rejected_by: user.id,
         rejection_reason: feedback,
+        rejection_feedback: JSON.stringify({
+          feedback_text: feedback,
+          feedback_issues: issues,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        }),
       })
       .eq("id", id)
 
     if (updateError) throw updateError
 
-    const { error: feedbackError } = await supabaseServiceRole
-      .from("ai_response_feedback")
-      .insert({
-        ai_response_id: id,
-        tenant_id: orgId,
-        user_id: user.id,
-        feedback_text: feedback,
-        feedback_issues: issues,
-        created_at: new Date().toISOString(),
-      })
-
-    if (feedbackError) {
-      console.error("Failed to store feedback:", feedbackError)
-
-    }
-
     if (issues.includes("wrong_tone")) {
-
       console.log("User reported wrong tone - consider updating guidance")
     }
 

@@ -17,7 +17,6 @@ export const GET: RequestHandler = async ({
   }
 
   try {
-
     const { data: tokenData } = await supabase
       .from("oauth_tokens")
       .select("status, token_metadata")

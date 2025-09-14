@@ -38,7 +38,7 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
     let body, responseId, action
     try {
       body = await request.json()
-        responseId = body.responseId || body.aiResponseId || body.response_id
+      responseId = body.responseId || body.aiResponseId || body.response_id
       action = body.action
       console.log("POST /api/reviews/publish - Request parsed successfully:", {
         responseId,
@@ -463,6 +463,7 @@ export const PUT: RequestHandler = async ({ request, locals, cookies }) => {
       }
 
       case "process-queue": {
+        const user = session.user
         const result = await publisherService.processBatch(
           tenant.id,
           5,
@@ -482,7 +483,7 @@ export const PUT: RequestHandler = async ({ request, locals, cookies }) => {
       }
 
       case "queue-selected": {
-            const responseIds =
+        const responseIds =
           body.responseIds || body.aiResponseIds || body.response_ids
 
         if (
@@ -521,7 +522,6 @@ export const GET: RequestHandler = async ({ locals, cookies }) => {
       console.log("GET /api/reviews/publish - No session")
       return json({ error: "Unauthorized" }, { status: 401 })
     }
-
 
     const tenantId = cookies.get("current_tenant_id")
     if (!tenantId) {

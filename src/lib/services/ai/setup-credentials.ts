@@ -1,9 +1,6 @@
-
 export function setupGoogleCloudCredentials() {
-
   if (process.env.VERCEL && process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     try {
-
       const credentials = JSON.parse(
         process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
       )
@@ -20,7 +17,6 @@ export function setupGoogleCloudCredentials() {
   }
 
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-
     return null
   }
 

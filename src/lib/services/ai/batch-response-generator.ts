@@ -35,7 +35,6 @@ export class BatchResponseGenerator {
     upsellItems: UpsellItem[],
     organizationId: string,
   ): Promise<string> {
-
     let brandIdentity = ""
     let responseGuidelines: string[] = []
     let thingsToAvoid: string[] = []
@@ -65,7 +64,7 @@ export class BatchResponseGenerator {
     }
 
     const activeUpsellItems = upsellItems
-      .filter((item) => (item as { is_active: boolean }).is_active)
+      .filter((item) => item.status === "active")
       .sort((a, b) => (b.priority || 0) - (a.priority || 0))
 
     let rejectionFeedback: string[] = []
@@ -228,7 +227,6 @@ Generate a personalized response to this review.`
     model: string = modelsConfig.defaultModel,
     onProgress?: (processed: number, total: number) => void,
   ): Promise<BatchGenerationResult[]> {
-
     const reviewsNeedingResponse = reviews.filter(
       (review) =>
         !(review as { review_reply?: string }).review_reply &&
@@ -285,12 +283,11 @@ Generate a personalized response to this review.`
     let errorCount = 0
 
     try {
-
       const { data: upsellItems } = await this.supabase
         .from("upsell_items")
         .select("*")
         .eq("tenant_id", organizationId)
-        .eq("is_active", true)
+        .eq("status", "active")
 
       const results = await this.generateForOrganization(
         organizationId,
@@ -309,7 +306,6 @@ Generate a personalized response to this review.`
 
       for (const result of results) {
         if (result.response) {
-
           const { error } = await this.supabase.from("ai_responses").insert({
             review_id: result.reviewId,
             tenant_id: organizationId,

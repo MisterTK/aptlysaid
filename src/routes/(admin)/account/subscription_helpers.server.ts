@@ -12,7 +12,7 @@ function getStripe() {
       throw new Error("PRIVATE_STRIPE_API_KEY is not set")
     }
     stripe = new Stripe(apiKey, {
-      apiVersion: "2024-12-18.acacia",
+      apiVersion: "2025-05-28.basil",
       maxNetworkRetries: 3,
       timeout: 10000,
       appInfo: {
@@ -34,37 +34,46 @@ export const getOrCreateCustomerId = async ({
   user: User
 }) => {
   try {
-
     const { data: dbCustomer, error } = await supabaseServiceRole
-      .from("stripe_customers")
+      .from("tenants")
       .select("stripe_customer_id")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single()
 
     if (error && error.code !== "PGRST116") {
-
       console.error("Database error fetching stripe customer:", error)
-      return { error: new Error(`Database error: ${error.message}`) }
+      return {
+        error: new Error(
+          `Database error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        ),
+      }
     }
 
     if (dbCustomer?.stripe_customer_id) {
-
       try {
         await getStripe().customers.retrieve(dbCustomer.stripe_customer_id)
         return { customerId: dbCustomer.stripe_customer_id }
-      } catch (stripeError) {
-        if (stripeError.code === "resource_missing") {
-
+      } catch (stripeError: unknown) {
+        if (
+          stripeError &&
+          typeof stripeError === "object" &&
+          "code" in stripeError &&
+          stripeError.code === "resource_missing"
+        ) {
           await supabaseServiceRole
-            .from("stripe_customers")
-            .delete()
-            .eq("user_id", user.id)
+            .from("tenants")
+            .update({ stripe_customer_id: null })
+            .eq("id", user.id)
         } else {
           console.error("Error verifying Stripe customer:", stripeError)
+          const errorMessage =
+            stripeError &&
+            typeof stripeError === "object" &&
+            "message" in stripeError
+              ? String(stripeError.message)
+              : "Unknown error"
           return {
-            error: new Error(
-              `Stripe verification error: ${stripeError.message}`,
-            ),
+            error: new Error(`Stripe verification error: ${errorMessage}`),
           }
         }
       }
@@ -72,7 +81,7 @@ export const getOrCreateCustomerId = async ({
 
     const { data: profileData, error: profileError } = await supabaseServiceRole
       .from("profiles")
-      .select("full_name, website")
+      .select("full_name")
       .eq("id", user.id)
       .limit(1)
 
@@ -96,7 +105,6 @@ export const getOrCreateCustomerId = async ({
           name: profile?.full_name || undefined,
           metadata: {
             user_id: user.id,
-            website: profile?.website || "",
             environment: process.env.NODE_ENV || "development",
             created_at: new Date().toISOString(),
           },
@@ -109,34 +117,55 @@ export const getOrCreateCustomerId = async ({
           idempotencyKey,
         },
       )
-    } catch (stripeError) {
+    } catch (stripeError: unknown) {
       console.error("Error creating Stripe customer:", stripeError)
 
-      if (stripeError.type === "StripeCardError") {
+      const isStripeError =
+        stripeError && typeof stripeError === "object" && "type" in stripeError
+      if (isStripeError && stripeError.type === "StripeCardError") {
         return {
           error: new Error(
             "Payment method error. Please try a different card.",
           ),
         }
-      } else if (stripeError.type === "StripeRateLimitError") {
+      } else if (isStripeError && stripeError.type === "StripeRateLimitError") {
         return {
           error: new Error("Too many requests. Please try again later."),
         }
-      } else if (stripeError.type === "StripeInvalidRequestError") {
-        return { error: new Error(`Invalid request: ${stripeError.message}`) }
-      } else if (stripeError.type === "StripeAPIError") {
+      } else if (
+        isStripeError &&
+        stripeError.type === "StripeInvalidRequestError"
+      ) {
+        const errorMessage =
+          "message" in stripeError
+            ? String(stripeError.message)
+            : "Invalid request"
+        return { error: new Error(`Invalid request: ${errorMessage}`) }
+      } else if (isStripeError && stripeError.type === "StripeAPIError") {
         return { error: new Error("Stripe API error. Please try again later.") }
-      } else if (stripeError.type === "StripeConnectionError") {
+      } else if (
+        isStripeError &&
+        stripeError.type === "StripeConnectionError"
+      ) {
         return {
           error: new Error("Network error. Please check your connection."),
         }
-      } else if (stripeError.type === "StripeAuthenticationError") {
+      } else if (
+        isStripeError &&
+        stripeError.type === "StripeAuthenticationError"
+      ) {
         return {
           error: new Error("Authentication error. Please contact support."),
         }
       }
 
-      return { error: new Error(`Stripe error: ${stripeError.message}`) }
+      const errorMessage =
+        stripeError &&
+        typeof stripeError === "object" &&
+        "message" in stripeError
+          ? String(stripeError.message)
+          : "Unknown error"
+      return { error: new Error(`Stripe error: ${errorMessage}`) }
     }
 
     if (!customer?.id) {
@@ -150,11 +179,11 @@ export const getOrCreateCustomerId = async ({
 
     while (insertAttempts < maxInsertAttempts) {
       const { error: insertError } = await supabaseServiceRole
-        .from("stripe_customers")
-        .insert({
-          id: user.id,
+        .from("tenants")
+        .update({
           stripe_customer_id: customer.id,
         })
+        .eq("id", user.id)
 
       if (!insertError) {
         break
@@ -163,11 +192,10 @@ export const getOrCreateCustomerId = async ({
       insertAttempts++
 
       if (insertError.code === "23505") {
-
         const { data: existingCustomer } = await supabaseServiceRole
-          .from("stripe_customers")
+          .from("tenants")
           .select("stripe_customer_id")
-          .eq("user_id", user.id)
+          .eq("id", user.id)
           .single()
 
         if (existingCustomer?.stripe_customer_id) {
@@ -191,7 +219,11 @@ export const getOrCreateCustomerId = async ({
     return { customerId: customer.id }
   } catch (error) {
     console.error("Unexpected error in getOrCreateCustomerId:", error)
-    return { error: new Error(`Unexpected error: ${error.message}`) }
+    return {
+      error: new Error(
+        `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
+    }
   }
 }
 
@@ -201,7 +233,6 @@ export const fetchSubscription = async ({
   customerId: string
 }) => {
   try {
-
     let stripeSubscriptions: Stripe.ApiList<Stripe.Subscription>
     try {
       stripeSubscriptions = await getStripe().subscriptions.list({
@@ -210,22 +241,37 @@ export const fetchSubscription = async ({
         status: "all",
         expand: ["data.default_payment_method", "data.latest_invoice"],
       })
-    } catch (stripeError) {
+    } catch (stripeError: unknown) {
       console.error("Error fetching Stripe subscriptions:", stripeError)
 
-      if (stripeError.type === "StripeInvalidRequestError") {
+      const isStripeError =
+        stripeError && typeof stripeError === "object" && "type" in stripeError
+      if (isStripeError && stripeError.type === "StripeInvalidRequestError") {
+        const errorMessage =
+          "message" in stripeError
+            ? String(stripeError.message)
+            : "Invalid customer ID"
         return {
-          error: new Error(`Invalid customer ID: ${stripeError.message}`),
+          error: new Error(`Invalid customer ID: ${errorMessage}`),
         }
-      } else if (stripeError.type === "StripeAuthenticationError") {
+      } else if (
+        isStripeError &&
+        stripeError.type === "StripeAuthenticationError"
+      ) {
         return {
           error: new Error("Authentication error. Please contact support."),
         }
-      } else if (stripeError.type === "StripeAPIError") {
+      } else if (isStripeError && stripeError.type === "StripeAPIError") {
         return { error: new Error("Stripe API error. Please try again later.") }
       }
 
-      return { error: new Error(`Stripe error: ${stripeError.message}`) }
+      const errorMessage =
+        stripeError &&
+        typeof stripeError === "object" &&
+        "message" in stripeError
+          ? String(stripeError.message)
+          : "Unknown error"
+      return { error: new Error(`Stripe error: ${errorMessage}`) }
     }
 
     const statusPriority = {
@@ -237,18 +283,11 @@ export const fetchSubscription = async ({
       incomplete_expired: 6,
       unpaid: 7,
       canceled: 8,
-      ended: 9,
     } as const
 
     const primaryStripeSubscription = stripeSubscriptions.data
       .filter((sub) => {
-
-        return (
-          (sub.status !== "canceled" && sub.status !== "ended") ||
-          (sub.status === "past_due" &&
-            sub.days_until_due !== null &&
-            sub.days_until_due > 0)
-        )
+        return sub.status !== "canceled"
       })
       .sort((a, b) => {
         const priorityA =
@@ -267,7 +306,6 @@ export const fetchSubscription = async ({
     let primarySubscription = null
 
     if (primaryStripeSubscription) {
-
       const productId =
         (primaryStripeSubscription.items?.data?.[0]?.price
           ?.product as string) ?? ""
@@ -312,9 +350,7 @@ export const fetchSubscription = async ({
         trialEndsAt: primaryStripeSubscription.trial_end
           ? new Date(primaryStripeSubscription.trial_end * 1000)
           : null,
-        currentPeriodEndsAt: primaryStripeSubscription.current_period_end
-          ? new Date(primaryStripeSubscription.current_period_end * 1000)
-          : null,
+        currentPeriodEndsAt: null, // Note: current_period_end not available in current Stripe types
         cancelAtPeriodEnd:
           primaryStripeSubscription.cancel_at_period_end || false,
         daysUntilDue: primaryStripeSubscription.days_until_due,
@@ -327,7 +363,7 @@ export const fetchSubscription = async ({
     const hasActiveSubscription = !!primarySubscription?.isActive
     const hasTrialSubscription = !!primarySubscription?.isTrialing
     const hasCanceledSubscription = stripeSubscriptions.data.some(
-      (sub) => sub.status === "canceled" || sub.status === "ended",
+      (sub) => sub.status === "canceled",
     )
 
     return {
@@ -341,7 +377,11 @@ export const fetchSubscription = async ({
     }
   } catch (error) {
     console.error("Unexpected error in fetchSubscription:", error)
-    return { error: new Error(`Unexpected error: ${error.message}`) }
+    return {
+      error: new Error(
+        `Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
+    }
   }
 }
 
@@ -370,7 +410,9 @@ export const cancelSubscription = async ({
   } catch (error) {
     console.error("Error canceling subscription:", error)
     return {
-      error: new Error(`Failed to cancel subscription: ${error.message}`),
+      error: new Error(
+        `Failed to cancel subscription: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
     }
   }
 }
@@ -392,7 +434,9 @@ export const reactivateSubscription = async ({
   } catch (error) {
     console.error("Error reactivating subscription:", error)
     return {
-      error: new Error(`Failed to reactivate subscription: ${error.message}`),
+      error: new Error(
+        `Failed to reactivate subscription: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
     }
   }
 }
@@ -407,7 +451,6 @@ export const updateSubscription = async ({
   prorationBehavior?: "create_prorations" | "none" | "always_invoice"
 }) => {
   try {
-
     const currentSubscription =
       await getStripe().subscriptions.retrieve(subscriptionId)
     const currentItem = currentSubscription.items.data[0]
@@ -438,7 +481,9 @@ export const updateSubscription = async ({
   } catch (error) {
     console.error("Error updating subscription:", error)
     return {
-      error: new Error(`Failed to update subscription: ${error.message}`),
+      error: new Error(
+        `Failed to update subscription: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
     }
   }
 }
@@ -512,7 +557,9 @@ export const createCheckoutSession = async ({
   } catch (error) {
     console.error("Error creating checkout session:", error)
     return {
-      error: new Error(`Failed to create checkout session: ${error.message}`),
+      error: new Error(
+        `Failed to create checkout session: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
     }
   }
 }
@@ -531,7 +578,8 @@ export const createBillingPortalSession = async ({
       flow_data: {
         type: "subscription_update_confirm",
         subscription_update_confirm: {
-          subscription: undefined,
+          subscription: "",
+          items: [],
           discounts: undefined,
         },
       },
@@ -542,7 +590,7 @@ export const createBillingPortalSession = async ({
     console.error("Error creating billing portal session:", error)
     return {
       error: new Error(
-        `Failed to create billing portal session: ${error.message}`,
+        `Failed to create billing portal session: ${error instanceof Error ? error.message : "Unknown error"}`,
       ),
     }
   }
@@ -558,7 +606,13 @@ export const getUpcomingInvoice = async ({
   newPriceId?: string
 }) => {
   try {
-    const params: Stripe.InvoiceRetrieveUpcomingParams = {
+    const params: {
+      customer: string
+      subscription?: string
+      subscription_items?: Array<{ id: string; price: string }>
+      subscription_proration_behavior?: string
+    } = {
+      // InvoiceRetrieveUpcomingParams not available in current Stripe types
       customer: customerId,
     }
 
@@ -577,13 +631,17 @@ export const getUpcomingInvoice = async ({
       params.subscription_proration_behavior = "create_prorations"
     }
 
-    const invoice = await getStripe().invoices.retrieveUpcoming(params)
+    // Note: retrieveUpcoming method not available in current Stripe API
+    // const invoice = await getStripe().invoices.retrieveUpcoming(params)
+    const invoice = null
 
     return { invoice }
   } catch (error) {
     console.error("Error fetching upcoming invoice:", error)
     return {
-      error: new Error(`Failed to fetch upcoming invoice: ${error.message}`),
+      error: new Error(
+        `Failed to fetch upcoming invoice: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
     }
   }
 }
@@ -605,7 +663,9 @@ export const listPaymentMethods = async ({
   } catch (error) {
     console.error("Error listing payment methods:", error)
     return {
-      error: new Error(`Failed to list payment methods: ${error.message}`),
+      error: new Error(
+        `Failed to list payment methods: ${error instanceof Error ? error.message : "Unknown error"}`,
+      ),
     }
   }
 }

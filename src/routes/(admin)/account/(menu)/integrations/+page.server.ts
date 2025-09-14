@@ -1,6 +1,8 @@
 import { redirect, fail } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
-import crypto from "crypto"
+// Using process.env directly for environment variables
+import type { SupabaseClient } from "@supabase/supabase-js"
+import * as crypto from "crypto"
 
 const publicEnv = process.env
 const privateEnv = process.env
@@ -39,7 +41,6 @@ function decryptToken(encryptedString: string): string {
   const encryptionKey = getEncryptionKey()
 
   try {
-
     const encryptedBuffer = Buffer.from(encryptedString, "base64")
 
     const iv = encryptedBuffer.slice(0, 16)
@@ -58,13 +59,14 @@ function decryptToken(encryptedString: string): string {
 
     return decrypted.toString("utf8")
   } catch (error) {
-    throw new Error(`Token decryption failed: ${error.message}`)
+    throw new Error(
+      `Token decryption failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    )
   }
 }
 
 function getUserFriendlyErrorMessage(error: string): string {
   const errorMappings: Record<string, string> = {
-
     REFRESH_TOKEN_INVALID:
       "Your Google connection has expired. Please reconnect your account.",
     invalid_grant:
@@ -166,10 +168,10 @@ async function retryWithBackoff<T>(
 }
 
 async function orchestratedSync(
-  supabase: unknown,
+  supabase: SupabaseClient,
   tenantId: string,
   syncType: "oauth_callback" | "manual" | "scheduled" = "manual",
-  privateEnv?: Record<string, unknown>,
+  envVars?: Record<string, string | undefined>,
 ): Promise<{
   success: boolean
   message: string
@@ -192,8 +194,7 @@ async function orchestratedSync(
   }
 
   try {
-
-    const env = privateEnv || (await import("$env/dynamic/private")).env
+    const env = envVars || privateEnv
 
     console.log(`Starting ${syncType} sync for tenant ${tenantId}`)
 
@@ -231,7 +232,7 @@ async function orchestratedSync(
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${env.PRIVATE_SUPABASE_SERVICE_ROLE || publicEnv.PUBLIC_SUPABASE_ANON_KEY}`,
-              },
+              } as HeadersInit,
               body: JSON.stringify({
                 tenantId,
                 accessToken: decryptedAccessToken,
@@ -260,7 +261,6 @@ async function orchestratedSync(
     console.log("🔄 Starting comprehensive sync for tenant", tenantId)
 
     try {
-
       const syncResponse = await retryWithBackoff(
         async () => {
           const response = await fetch(
@@ -270,7 +270,7 @@ async function orchestratedSync(
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${env.PRIVATE_SUPABASE_SERVICE_ROLE || publicEnv.PUBLIC_SUPABASE_ANON_KEY}`,
-              },
+              } as HeadersInit,
               body: JSON.stringify({
                 tenantId: tenantId,
               }),
@@ -320,9 +320,8 @@ async function orchestratedSync(
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${env.PRIVATE_SUPABASE_SERVICE_ROLE || publicEnv.PUBLIC_SUPABASE_ANON_KEY}`,
                   "X-Cron-Secret":
-                    privateEnv.CRON_SECRET ||
-                    "cron_secret_2025_reviews_production",
-                },
+                    env?.CRON_SECRET || "cron_secret_2025_reviews_production",
+                } as HeadersInit,
                 body: JSON.stringify({
                   tenantId,
                 }),
@@ -445,7 +444,6 @@ export const load: PageServerLoad = async ({
   }
 
   if (code && state) {
-
     const expectedState = cookies.get("google_oauth_state")
     if (!expectedState || state !== expectedState) {
       return {
@@ -458,7 +456,6 @@ export const load: PageServerLoad = async ({
     const isReconnection = cookies.get("google_oauth_reconnect") === "true"
 
     try {
-
       const redirectUrl = url.origin + "/account/integrations"
       console.log(
         `OAuth callback - orgId: ${orgId}, userId: ${user.id}, redirectUrl: ${redirectUrl}, isReconnection: ${isReconnection}`,
@@ -498,7 +495,6 @@ export const load: PageServerLoad = async ({
       let tokenStoreResult, insertError
 
       if (existingToken) {
-
         const { data, error } = await supabaseServiceRole
           .from("oauth_tokens")
           .update({
@@ -521,7 +517,7 @@ export const load: PageServerLoad = async ({
               token_type: "Bearer",
               connected_at: new Date().toISOString(),
               is_reconnection: isReconnection,
-              previous_status: existingToken.status,
+              previous_status: oauthToken?.status,
             },
             updated_at: new Date().toISOString(),
           })
@@ -532,7 +528,6 @@ export const load: PageServerLoad = async ({
         tokenStoreResult = data
         insertError = error
       } else {
-
         const { data, error } = await supabaseServiceRole
           .from("oauth_tokens")
           .insert({
@@ -620,7 +615,6 @@ export const load: PageServerLoad = async ({
         }
       } catch (syncError) {
         console.error("Error during immediate sync after OAuth:", syncError)
-
       }
 
       if (isFirstConnection) {
@@ -632,7 +626,7 @@ export const load: PageServerLoad = async ({
           const { error: workflowError } = await supabaseServiceRole.rpc(
             "api_start_workflow",
             {
-              p_tenant_id: orgId,
+              p_organization_id: orgId,
               p_workflow_type: "customer_onboarding",
               p_context: {
                 trigger: "oauth_callback",
@@ -657,7 +651,6 @@ export const load: PageServerLoad = async ({
 
       redirect(303, "/account/integrations?success=true")
     } catch (err) {
-
       if (
         err &&
         typeof err === "object" &&
@@ -700,13 +693,11 @@ export const load: PageServerLoad = async ({
 
   if (hasGoogleConnection) {
     try {
-
       const tokenExpired = oauthToken.expires_at
         ? new Date(oauthToken.expires_at) < new Date()
         : true
 
       if (tokenExpired) {
-
         const { data: refreshTokenData } = await supabaseServiceRole
           .from("oauth_tokens")
           .select("encrypted_refresh_token")
@@ -714,7 +705,6 @@ export const load: PageServerLoad = async ({
           .single()
 
         if (refreshTokenData?.encrypted_refresh_token) {
-
           const refreshResponse = await fetch(
             "https://oauth2.googleapis.com/token",
             {
@@ -807,10 +797,11 @@ export const load: PageServerLoad = async ({
       ? (expiresAt.getTime() - now.getTime()) / 1000
       : null
 
-    const tokenMetadata = oauthToken.token_metadata || {}
+    const tokenMetadata =
+      (oauthToken.token_metadata as Record<string, unknown>) || {}
     const connectedAt = tokenMetadata.connected_at || oauthToken.created_at
     const lastRefreshed = oauthToken.last_refresh_at
-    const scopes = tokenMetadata.oauth_scopes || []
+    const scopes = (tokenMetadata.oauth_scopes as string[]) || []
 
     const { data: refreshTokenData } = await supabaseServiceRole
       .from("oauth_tokens")
@@ -901,7 +892,6 @@ export const actions: Actions = {
     }
 
     try {
-
       const { data, error } = await supabaseServiceRole
         .from("oauth_tokens")
         .update({
@@ -1110,7 +1100,6 @@ export const actions: Actions = {
 
       redirect(303, "/account/integrations?disconnected=true")
     } catch (error) {
-
       if (
         error &&
         typeof error === "object" &&
@@ -1145,10 +1134,9 @@ export const actions: Actions = {
     }
 
     try {
-
       const { data: oauthToken } = await supabaseServiceRole
         .from("oauth_tokens")
-        .select("id, encrypted_refresh_token")
+        .select("id, encrypted_refresh_token, token_metadata")
         .eq("tenant_id", orgId)
         .eq("provider", "google")
         .eq("status", "active")
@@ -1166,7 +1154,7 @@ export const actions: Actions = {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            refresh_token: decryptToken(oauthToken.encrypted_refresh_token),
+            refresh_token: decryptToken(oauthToken.encrypted_refresh_token!),
             client_id:
               PUBLIC_GOOGLE_CLIENT_ID ||
               publicEnv.PUBLIC_GOOGLE_CLIENT_ID ||
@@ -1199,8 +1187,16 @@ export const actions: Actions = {
           refresh_attempts: 0,
           last_refresh_error: null,
           token_metadata: {
-            ...oauthToken.token_metadata,
-            refresh_count: (oauthToken.token_metadata?.refresh_count || 0) + 1,
+            ...(typeof oauthToken.token_metadata === "object" &&
+            oauthToken.token_metadata !== null
+              ? (oauthToken.token_metadata as Record<string, unknown>)
+              : {}),
+            refresh_count:
+              (typeof oauthToken.token_metadata === "object" &&
+              oauthToken.token_metadata !== null
+                ? ((oauthToken.token_metadata as Record<string, unknown>)
+                    .refresh_count as number) || 0
+                : 0) + 1,
           },
           updated_at: new Date().toISOString(),
         })
@@ -1214,7 +1210,6 @@ export const actions: Actions = {
   },
 
   reconnectGoogle: async ({ cookies, request }) => {
-
     try {
       const clientId =
         PUBLIC_GOOGLE_CLIENT_ID ||

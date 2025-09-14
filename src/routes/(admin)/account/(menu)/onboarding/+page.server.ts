@@ -2,6 +2,7 @@ import type { PageServerLoad } from "./$types"
 import { createAdminClient } from "$lib/server/supabase-admin"
 import { getUserOrganization } from "$lib/server/utils"
 import { redirect } from "@sveltejs/kit"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
 export const load: PageServerLoad = async ({ locals }) => {
   const session = await locals.safeGetSession()
@@ -10,16 +11,15 @@ export const load: PageServerLoad = async ({ locals }) => {
   }
 
   const supabase = createAdminClient()
-  const organization = await getUserOrganization(supabase, session.user.id)
+  const organization = await getUserOrganization(supabase, session.user!.id)
 
   if (!organization) {
     throw redirect(302, "/login")
   }
 
   try {
-
     const { data: workflowExecution } = await supabase
-      .from("workflow_executions")
+      .from("workflows")
       .select("*")
       .eq("organization_id", organization.id)
       .eq("workflow_type", "customer_onboarding")
@@ -55,14 +55,12 @@ async function getOnboardingStatus(
   organizationId: string,
 ) {
   try {
-
     const [
       { data: profile },
       { data: tokens },
       { data: locations },
       { data: guidance },
     ] = await Promise.all([
-
       supabase
         .from("profiles")
         .select("first_name, last_name, company_name")

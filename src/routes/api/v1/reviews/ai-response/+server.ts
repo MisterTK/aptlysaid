@@ -5,7 +5,7 @@ import { getUserOrganization } from "$lib/server/utils"
 export const PATCH: RequestHandler = async ({ request, locals }) => {
   try {
     const session = await locals.safeGetSession()
-    if (!session) {
+    if (!session || !session.user) {
       return json({ error: "Unauthorized" }, { status: 401 })
     }
 

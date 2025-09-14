@@ -7,8 +7,6 @@ export const prerender = false
 export const GET: RequestHandler = async () => {
   return await sitemap.response({
     origin: WebsiteBaseUrl,
-    excludeRoutePatterns: [
-      ".*\\(admin\\).*",
-    ],
+    excludeRoutePatterns: [".*\\(admin\\).*"],
   })
 }

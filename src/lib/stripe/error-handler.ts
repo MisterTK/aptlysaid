@@ -11,44 +11,71 @@ export interface StripeErrorInfo {
 }
 
 export function handleStripeError(error: unknown): StripeErrorInfo {
-
-  if (!error?.type?.startsWith?.("Stripe")) {
+  // Check if error is an object with proper structure
+  if (!error || typeof error !== "object") {
     return {
       type: "UnknownError",
-      message: error.message || "Unknown error occurred",
+      message: "Unknown error occurred",
       userFriendlyMessage: "An unexpected error occurred. Please try again.",
       shouldRetry: false,
       logLevel: "error",
     }
   }
 
-  const stripeError = error as Stripe.StripeError
+  // Check if error has type property and is a Stripe error
+  const errorObj = error as Record<string, unknown>
+  const validStripeTypes = [
+    "card_error",
+    "invalid_request_error",
+    "api_error",
+    "idempotency_error",
+    "rate_limit_error",
+    "authentication_error",
+    "invalid_grant",
+    "temporary_session_expired",
+  ]
+
+  if (
+    !errorObj.type ||
+    typeof errorObj.type !== "string" ||
+    !validStripeTypes.includes(errorObj.type)
+  ) {
+    return {
+      type: "UnknownError",
+      message: (errorObj.message as string) || "Unknown error occurred",
+      userFriendlyMessage: "An unexpected error occurred. Please try again.",
+      shouldRetry: false,
+      logLevel: "error",
+    }
+  }
+
+  const stripeError = error as Stripe.StripeRawError
 
   switch (stripeError.type) {
-    case "StripeCardError":
+    case "card_error":
       return {
         type: stripeError.type,
-        message: stripeError.message,
+        message: stripeError.message || "Card error occurred",
         userFriendlyMessage: getCardErrorMessage(stripeError),
         code: stripeError.code,
         shouldRetry: isRetryableCardError(stripeError.code),
         logLevel: "warn",
       }
 
-    case "StripeRateLimitError":
+    case "rate_limit_error":
       return {
         type: stripeError.type,
-        message: stripeError.message,
+        message: stripeError.message || "Rate limit exceeded",
         userFriendlyMessage:
           "Too many requests. Please wait a moment and try again.",
         shouldRetry: true,
         logLevel: "warn",
       }
 
-    case "StripeInvalidRequestError":
+    case "invalid_request_error":
       return {
         type: stripeError.type,
-        message: stripeError.message,
+        message: stripeError.message || "Invalid request",
         userFriendlyMessage:
           "Invalid request. Please check your information and try again.",
         code: stripeError.code,
@@ -56,58 +83,57 @@ export function handleStripeError(error: unknown): StripeErrorInfo {
         logLevel: "error",
       }
 
-    case "StripeAPIError":
+    case "api_error":
       return {
         type: stripeError.type,
-        message: stripeError.message,
+        message: stripeError.message || "API error occurred",
         userFriendlyMessage:
           "Payment service temporarily unavailable. Please try again in a few minutes.",
         shouldRetry: true,
         logLevel: "error",
       }
 
-    case "StripeConnectionError":
+    case "authentication_error":
       return {
         type: stripeError.type,
-        message: stripeError.message,
-        userFriendlyMessage:
-          "Network connection error. Please check your internet connection and try again.",
-        shouldRetry: true,
-        logLevel: "warn",
-      }
-
-    case "StripeAuthenticationError":
-      return {
-        type: stripeError.type,
-        message: stripeError.message,
+        message: stripeError.message || "Authentication error",
         userFriendlyMessage: "Authentication error. Please contact support.",
         shouldRetry: false,
         logLevel: "error",
       }
 
-    case "StripePermissionError":
+    case "idempotency_error":
       return {
         type: stripeError.type,
-        message: stripeError.message,
-        userFriendlyMessage: "Permission denied. Please contact support.",
-        shouldRetry: false,
-        logLevel: "error",
-      }
-
-    case "StripeIdempotencyError":
-      return {
-        type: stripeError.type,
-        message: stripeError.message,
+        message: stripeError.message || "Idempotency error",
         userFriendlyMessage:
           "Duplicate request detected. Please refresh and try again.",
         shouldRetry: false,
         logLevel: "warn",
       }
 
+    case "invalid_grant":
+      return {
+        type: stripeError.type,
+        message: stripeError.message || "Invalid grant",
+        userFriendlyMessage: "Authorization error. Please contact support.",
+        shouldRetry: false,
+        logLevel: "error",
+      }
+
+    case "temporary_session_expired":
+      return {
+        type: stripeError.type,
+        message: stripeError.message || "Session expired",
+        userFriendlyMessage: "Session expired. Please try again.",
+        shouldRetry: true,
+        logLevel: "warn",
+      }
+
     default:
       return {
-        type: stripeError.type || "StripeError",
-        message: stripeError.message,
+        type: stripeError.type || "api_error",
+        message: stripeError.message || "Unknown error occurred",
         userFriendlyMessage:
           "Payment processing error. Please try again or contact support.",
         shouldRetry: false,
@@ -116,7 +142,7 @@ export function handleStripeError(error: unknown): StripeErrorInfo {
   }
 }
 
-function getCardErrorMessage(error: Stripe.StripeCardError): string {
+function getCardErrorMessage(error: Stripe.StripeRawError): string {
   switch (error.code) {
     case "card_declined":
       return "Your card was declined. Please try a different payment method."

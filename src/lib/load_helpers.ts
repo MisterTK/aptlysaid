@@ -11,10 +11,8 @@ export const load_helper = async (
   server_session: Session | null,
   supabase: SupabaseClient<Database>,
 ): Promise<LoadHelperResult> => {
-
   let session = server_session
   if (isBrowser()) {
-
     const getSessionResponse = await supabase.auth.getSession()
     session = getSessionResponse.data.session
   }

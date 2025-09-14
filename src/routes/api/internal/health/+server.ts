@@ -15,7 +15,6 @@ export const GET: RequestHandler = async ({ locals: { supabase } }) => {
   }
 
   try {
-
     const { error: dbError } = await supabase
       .from("profiles")
       .select("count")

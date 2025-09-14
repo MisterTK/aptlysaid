@@ -1,5 +1,10 @@
 import { fail, redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Actions } from "./$types"
+import type { Database } from "../../../../DatabaseDefinitions"
+
+type TenantInsert = Database["public"]["Tables"]["tenants"]["Insert"]
+type BusinessGuidanceInsert =
+  Database["public"]["Tables"]["business_guidance"]["Insert"]
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
   const { user } = await safeGetSession()
@@ -99,7 +104,7 @@ export const actions: Actions = {
     const trialEndDate = new Date()
     trialEndDate.setDate(trialEndDate.getDate() + 14)
 
-    const tenantInsertData: Record<string, unknown> = {
+    const tenantInsertData: TenantInsert = {
       name: name.trim(),
       slug: slug.toLowerCase(),
       subscription_status: "trial",
@@ -144,7 +149,7 @@ export const actions: Actions = {
     const newTenant =
       newTenantData && newTenantData.length > 0 ? newTenantData[0] : null
 
-    if (tenantError) {
+    if (tenantError || !newTenant) {
       console.error("Error creating tenant:", tenantError)
       return fail(500, {
         errors: { _: "Failed to create organization" } as FormErrors,
@@ -178,7 +183,7 @@ export const actions: Actions = {
     }
 
     if (newTenant) {
-      const businessGuidanceData: Record<string, unknown> = {
+      const businessGuidanceData: BusinessGuidanceInsert = {
         tenant_id: newTenant.id,
         brand_voice: brandVoice || "Professional and friendly",
         writing_style: writingStyle,
@@ -209,7 +214,6 @@ export const actions: Actions = {
 
       if (guidanceError) {
         console.error("Error creating business guidance:", guidanceError)
-
       }
 
       const { error: aiConfigError } = await supabaseServiceRole

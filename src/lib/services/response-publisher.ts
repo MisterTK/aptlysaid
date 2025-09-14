@@ -188,4 +188,144 @@ export class ResponsePublisherService {
       }
     }
   }
+
+  async processBatch(
+    tenantId: string,
+    batchSize: number = 5,
+    publishedBy?: string,
+  ): Promise<PublishResult> {
+    let processedCount = 0
+    let failedCount = 0
+
+    for (let i = 0; i < batchSize; i++) {
+      const result = await this.processNextQueuedResponse(tenantId, publishedBy)
+      processedCount += result.processedCount
+      failedCount += result.failedCount
+
+      if (!result.success || result.processedCount === 0) {
+        break
+      }
+    }
+
+    return {
+      success: failedCount === 0,
+      processedCount,
+      failedCount,
+      error:
+        failedCount > 0
+          ? `${failedCount} responses failed to publish`
+          : undefined,
+    }
+  }
+
+  async queueSelectedResponses(
+    tenantId: string,
+    responseIds: string[],
+  ): Promise<number> {
+    if (!responseIds || responseIds.length === 0) return 0
+
+    const { data: responses, error: fetchError } = await this.supabase
+      .from("ai_responses")
+      .select("id, reviews!inner(location_id)")
+      .eq("tenant_id", tenantId)
+      .in("id", responseIds)
+      .eq("status", "approved")
+
+    if (fetchError) throw fetchError
+    if (!responses || responses.length === 0) return 0
+
+    const queueItems = responses.map((response) => ({
+      tenant_id: tenantId,
+      response_id: response.id,
+      location_id: response.reviews.location_id,
+      platform: "google" as const,
+      status: "pending" as const,
+      scheduled_for: new Date().toISOString(),
+      max_attempts: 3,
+      priority: 50,
+    }))
+
+    const { error: insertError } = await this.supabase
+      .from("response_queue")
+      .insert(queueItems)
+
+    if (insertError) throw insertError
+
+    return responses.length
+  }
+
+  async retryFailedResponses(tenantId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("response_queue")
+      .update({
+        status: "pending",
+        attempt_count: 0,
+        error_message: null,
+        error_code: null,
+        last_attempt_at: null,
+        next_retry_at: null,
+      })
+      .eq("tenant_id", tenantId)
+      .eq("status", "failed")
+
+    if (error) throw error
+  }
+
+  async clearFailedResponses(tenantId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("response_queue")
+      .delete()
+      .eq("tenant_id", tenantId)
+      .eq("status", "failed")
+
+    if (error) throw error
+  }
+
+  async getQueueStatus(tenantId: string) {
+    const { data: queueItems, error } = await this.supabase
+      .from("response_queue")
+      .select(
+        `
+        status,
+        scheduled_for,
+        priority,
+        attempt_count,
+        max_attempts,
+        error_message
+      `,
+      )
+      .eq("tenant_id", tenantId)
+
+    if (error) throw error
+
+    const statusCounts = (queueItems || []).reduce(
+      (acc, item) => {
+        const status = item.status
+        if (status) {
+          acc[status] = (acc[status] || 0) + 1
+        }
+        return acc
+      },
+      {} as Record<string, number>,
+    )
+
+    const nextScheduled = queueItems
+      ?.filter((item) => item.status === "pending" && item.scheduled_for)
+      .sort(
+        (a, b) =>
+          new Date(a.scheduled_for!).getTime() -
+          new Date(b.scheduled_for!).getTime(),
+      )[0]?.scheduled_for
+
+    return {
+      total: queueItems?.length || 0,
+      pending: statusCounts.pending || 0,
+      processing: statusCounts.processing || 0,
+      published: statusCounts.published || 0,
+      failed: statusCounts.failed || 0,
+      cancelled: statusCounts.cancelled || 0,
+      nextScheduled,
+      items: queueItems || [],
+    }
+  }
 }

@@ -139,7 +139,6 @@ export class GoogleMyBusinessService {
       })
 
       if (response.status === 401) {
-
         await this.refreshAccessToken()
 
         return this.makeRequest(url, options, retryCount)
@@ -159,7 +158,6 @@ export class GoogleMyBusinessService {
 
       return response
     } catch (error) {
-
       if (this.isNetworkError(error) && retryCount < maxRetries) {
         const delay = baseDelay * Math.pow(2, retryCount)
         const jitter = Math.random() * 1000
@@ -177,12 +175,7 @@ export class GoogleMyBusinessService {
   }
 
   private shouldRetry(status: number): boolean {
-    return (
-      status === 429 ||
-      status === 502 ||
-      status === 503 ||
-      status === 504
-    )
+    return status === 429 || status === 502 || status === 503 || status === 504
   }
 
   private isNetworkError(error: unknown): boolean {
@@ -219,7 +212,6 @@ export class GoogleMyBusinessService {
         console.error("Token refresh failed:", error)
 
         if (error.error === "invalid_grant") {
-
           throw new Error("REFRESH_TOKEN_INVALID")
         }
 
@@ -255,7 +247,6 @@ export class GoogleMyBusinessService {
         })
       }
     } catch (error) {
-
       if (this.isNetworkError(error) && retryCount < maxRetries) {
         const delay = baseDelay * Math.pow(2, retryCount)
         const jitter = Math.random() * 1000
@@ -287,7 +278,6 @@ export class GoogleMyBusinessService {
   }
 
   async getLocations(accountId: string): Promise<BusinessLocation[]> {
-
     const cleanAccountId = accountId.replace("accounts/", "")
 
     const response = await this.makeRequest(
@@ -304,7 +294,6 @@ export class GoogleMyBusinessService {
   }
 
   async getLocationsForAccount(accountId: string): Promise<BusinessLocation[]> {
-
     return this.getLocations(accountId)
   }
 
@@ -340,7 +329,6 @@ export class GoogleMyBusinessService {
   }
 
   async getInvitations(): Promise<Invitation[]> {
-
     const allInvitations: Invitation[] = []
 
     try {
@@ -359,7 +347,6 @@ export class GoogleMyBusinessService {
               allInvitations.push(...data.invitations)
             }
           } else {
-
             console.error(
               `Failed to fetch invitations for account ${accountName}:`,
               await response.text(),
@@ -399,7 +386,6 @@ export class GoogleMyBusinessService {
 
   async getAllAccessibleLocations(): Promise<BusinessLocation[]> {
     try {
-
       const wildcardLocations = await this.getAllLocationsWithWildcard()
 
       if (wildcardLocations.length > 0) {
@@ -488,7 +474,6 @@ export class GoogleMyBusinessService {
   }
 
   async getReviews(accountId: string, locationId: string): Promise<Review[]> {
-
     const cleanLocationId = locationId.replace("locations/", "")
 
     if (this.shouldUseWildcard(accountId)) {
@@ -571,7 +556,6 @@ export class GoogleMyBusinessService {
     reviewId: string,
     comment: string,
   ): Promise<boolean> {
-
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
 
@@ -632,7 +616,6 @@ export class GoogleMyBusinessService {
     reviewName: string,
     comment: string,
   ): Promise<boolean> {
-
     const response = await this.makeRequest(
       `${GOOGLE_MY_BUSINESS_REVIEWS_API}/${reviewName}/reply`,
       {
@@ -649,7 +632,6 @@ export class GoogleMyBusinessService {
     console.error("Failed to reply to review by name:", errorText)
 
     if (response.status === 403 || errorText.includes("PERMISSION_DENIED")) {
-
       const parts = reviewName.split("/")
       if (
         parts.length >= 6 &&
@@ -686,7 +668,6 @@ export class GoogleMyBusinessService {
     locationId: string,
     reviewId: string,
   ): Promise<boolean> {
-
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
     const cleanReviewId = reviewId.replace("reviews/", "")
@@ -726,7 +707,6 @@ export class GoogleMyBusinessService {
   }
 
   async getBusinessInfo(accountId: string, locationId: string) {
-
     const cleanAccountId = accountId.replace("accounts/", "")
     const cleanLocationId = locationId.replace("locations/", "")
 
@@ -785,7 +765,6 @@ export class GoogleMyBusinessService {
   async getReviewsOptimal(
     locationInfo: string | { accountId?: string; locationId: string },
   ): Promise<Review[]> {
-
     if (typeof locationInfo === "string") {
       return this.getReviewsByLocationName(locationInfo)
     }
@@ -799,7 +778,6 @@ export class GoogleMyBusinessService {
     const cleanLocationId = locationId.replace("locations/", "")
 
     try {
-
       const readMask = [
         "name",
         "title",

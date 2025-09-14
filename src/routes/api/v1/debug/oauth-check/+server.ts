@@ -3,7 +3,6 @@ import type { RequestHandler } from "./$types"
 
 export const GET: RequestHandler = async ({ locals, cookies }) => {
   try {
-
     const session = await locals.safeGetSession()
     if (!session) {
       return json({ error: "Unauthorized" }, { status: 401 })
