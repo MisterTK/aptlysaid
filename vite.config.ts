@@ -22,7 +22,7 @@ export default defineConfig({
     globals: true,
   },
   build: {
-    target: "esnext",
+    target: "baseline-widely-available",
     minify: "esbuild",
     rollupOptions: {
       onwarn(warning, warn) {
