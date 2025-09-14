@@ -230,7 +230,7 @@
 
       <!-- Actions -->
       <div class="modal-action">
-        <a href="/account/response-settings" class="btn btn-primary">
+        <a href="/account/response-settings" data-sveltekit-preload-data class="btn btn-primary">
           ⚙️ Configure Auto-Publishing
         </a>
         <button class="btn" onclick={onClose}>Close</button>

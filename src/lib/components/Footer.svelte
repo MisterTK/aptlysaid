@@ -23,12 +23,14 @@
           <li>
             <a
               href="/"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors">Home</a
             >
           </li>
           <li>
             <a
               href="/#features"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors"
               >Features</a
             >
@@ -36,6 +38,7 @@
           <li>
             <a
               href="/pricing"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors"
               >Pricing</a
             >
@@ -43,6 +46,7 @@
           <li>
             <a
               href="/#about"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors">About</a
             >
           </li>
@@ -56,6 +60,7 @@
           <li>
             <a
               href="/contact_us"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors"
               >Help Center</a
             >
@@ -63,6 +68,7 @@
           <li>
             <a
               href="/contact_us"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors"
               >Contact Us</a
             >
@@ -70,6 +76,7 @@
           <li>
             <a
               href="/#privacy"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors"
               >Privacy Policy</a
             >
@@ -77,6 +84,7 @@
           <li>
             <a
               href="/#terms"
+              data-sveltekit-preload-data
               class="text-neutral hover:text-primary transition-colors"
               >Terms of Service</a
             >
