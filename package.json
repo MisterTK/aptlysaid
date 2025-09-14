@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "engines": {
-    "node": ">=20.19.0",
-    "npm": ">=10.0.0"
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
   },
   "scripts": {
     "dev": "vite dev",
@@ -41,7 +41,7 @@
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
     "autoprefixer": "^10.4.21",
-    "daisyui": "^5.1.10",
+    "daisyui": "^5.1.11",
     "eslint": "^9.35.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.12.3",
@@ -65,7 +65,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@ai-sdk/google-vertex": "^3.0.26",
+    "@ai-sdk/google-vertex": "^3.0.27",
     "@ai-sdk/react": "^2.0.44",
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/auth-ui-svelte": "^0.2.9",
