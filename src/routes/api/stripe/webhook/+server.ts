@@ -11,7 +11,7 @@ function getStripe() {
       throw new Error("PRIVATE_STRIPE_API_KEY is not set")
     }
     stripe = new Stripe(apiKey, {
-      apiVersion: "2025-05-28.basil",
+      apiVersion: "2025-08-27.basil",
       maxNetworkRetries: 3,
       timeout: 10000,
       appInfo: {

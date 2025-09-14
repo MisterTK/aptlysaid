@@ -67,7 +67,7 @@ Generate a response:`
     const { text } = await generateText({
       model,
       prompt,
-      maxTokens: 500,
+      maxOutputTokens: 500,
       temperature: 0.7,
     })
 
@@ -81,7 +81,7 @@ Generate a response:`
     return streamText({
       model,
       prompt,
-      maxTokens: 500,
+      maxOutputTokens: 500,
       temperature: 0.7,
     })
   }
