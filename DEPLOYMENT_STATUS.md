@@ -88,7 +88,6 @@ These need to be configured with actual API keys:
    ```
 
 3. **Configure External Services**
-
    - Get Google OAuth credentials from Google Cloud Console
    - Get OpenAI API key
    - Set up Stripe account and webhooks

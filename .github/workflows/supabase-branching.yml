@@ -1,0 +1,234 @@
+name: Supabase Branching
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform"
+        required: true
+        default: "sync"
+        type: choice
+        options:
+          - sync
+          - cleanup
+          - reset
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+jobs:
+  # Create or update preview branch when PR is opened/updated
+  create-preview-branch:
+    name: Create/Update Preview Branch
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Get branch name
+        id: branch
+        run: |
+          branch_name="preview-pr-${{ github.event.pull_request.number }}"
+          echo "name=$branch_name" >> $GITHUB_OUTPUT
+
+      - name: Create or get existing branch
+        id: create_branch
+        run: |
+          # Try to create branch, if it exists, we'll get an error but continue
+          supabase branches create ${{ steps.branch.outputs.name }} \
+            --project-ref ${{ env.SUPABASE_PROJECT_ID }} || true
+
+          # Get the branch URL
+          branch_url=$(supabase branches list --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+            | grep ${{ steps.branch.outputs.name }} \
+            | awk '{print $3}')
+
+          echo "url=$branch_url" >> $GITHUB_OUTPUT
+
+      - name: Push migrations to branch
+        run: |
+          supabase db push \
+            --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+            --branch ${{ steps.branch.outputs.name }}
+
+      - name: Run seed script if exists
+        run: |
+          if [ -f "supabase/seed.sql" ]; then
+            supabase db seed \
+              --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+              --branch ${{ steps.branch.outputs.name }}
+          fi
+
+      - name: Generate database types
+        run: |
+          supabase gen types typescript \
+            --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+            --branch ${{ steps.branch.outputs.name }} \
+            > src/types/database.preview.ts
+
+      - name: Comment PR with branch details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = `## 🗄️ Supabase Preview Branch Created
+
+            **Branch Name:** \`${{ steps.branch.outputs.name }}\`
+            **Database URL:** ${{ steps.create_branch.outputs.url }}
+
+            ### Connection Details
+            Add these environment variables to your Vercel preview deployment:
+
+            \`\`\`env
+            SUPABASE_URL=${{ steps.create_branch.outputs.url }}
+            SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+            \`\`\`
+
+            ### Local Development
+            To connect locally to this preview branch:
+            \`\`\`bash
+            supabase link --project-ref ${{ env.SUPABASE_PROJECT_ID }}
+            supabase db remote commit --branch ${{ steps.branch.outputs.name }}
+            \`\`\`
+
+            ⚠️ This preview branch will be automatically deleted when the PR is merged or closed.`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.body.includes('Supabase Preview Branch Created')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+  # Delete preview branch when PR is closed
+  cleanup-preview-branch:
+    name: Cleanup Preview Branch
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Delete preview branch
+        run: |
+          branch_name="preview-pr-${{ github.event.pull_request.number }}"
+          supabase branches delete $branch_name \
+            --project-ref ${{ env.SUPABASE_PROJECT_ID }} || true
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '🗑️ Supabase preview branch has been deleted.'
+            });
+
+  # Sync staging branch with develop
+  sync-staging:
+    name: Sync Staging Branch
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Create or update staging branch
+        run: |
+          # Create staging branch if it doesn't exist
+          supabase branches create staging \
+            --project-ref ${{ env.SUPABASE_PROJECT_ID }} || true
+
+          # Push latest migrations to staging
+          supabase db push \
+            --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+            --branch staging
+
+  # Manual workflow for branch management
+  manual-branch-management:
+    name: Manual Branch Management
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Execute action
+        run: |
+          case "${{ github.event.inputs.action }}" in
+            sync)
+              echo "Syncing all branches with latest migrations..."
+              for branch in $(supabase branches list --project-ref ${{ env.SUPABASE_PROJECT_ID }} | tail -n +2 | awk '{print $1}'); do
+                echo "Syncing branch: $branch"
+                supabase db push \
+                  --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+                  --branch $branch || true
+              done
+              ;;
+            cleanup)
+              echo "Cleaning up orphaned preview branches..."
+              for branch in $(supabase branches list --project-ref ${{ env.SUPABASE_PROJECT_ID }} | grep "preview-pr-" | awk '{print $1}'); do
+                pr_number=$(echo $branch | sed 's/preview-pr-//')
+                # Check if PR is still open
+                pr_state=$(gh pr view $pr_number --json state --jq .state 2>/dev/null || echo "CLOSED")
+                if [ "$pr_state" = "CLOSED" ]; then
+                  echo "Deleting orphaned branch: $branch"
+                  supabase branches delete $branch \
+                    --project-ref ${{ env.SUPABASE_PROJECT_ID }} || true
+                fi
+              done
+              ;;
+            reset)
+              echo "Resetting staging branch..."
+              supabase branches delete staging \
+                --project-ref ${{ env.SUPABASE_PROJECT_ID }} || true
+              supabase branches create staging \
+                --project-ref ${{ env.SUPABASE_PROJECT_ID }}
+              supabase db push \
+                --project-ref ${{ env.SUPABASE_PROJECT_ID }} \
+                --branch staging
+              ;;
+          esac
+        env:
+          GH_TOKEN: ${{ github.token }}

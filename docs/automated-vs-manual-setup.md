@@ -35,7 +35,6 @@ These must be configured once in the Supabase Dashboard:
 **Location**: Authentication → Providers
 
 - **Email**:
-
   - ✅ Already configured via config.toml
   - Verify SMTP settings if using custom email
 
@@ -173,13 +172,11 @@ Manual verification in Supabase Dashboard:
 ### If Deployment Fails
 
 1. **Check GitHub Actions logs**
-
    - Which step failed?
    - Missing secrets?
    - Database connection issues?
 
 2. **Common Issues**:
-
    - **Vault not created**: First deployment creates it
    - **Cron jobs not running**: Check database settings
    - **Functions not authenticated**: Verify service role key
@@ -198,17 +195,14 @@ Manual verification in Supabase Dashboard:
 ## 💡 Best Practices
 
 1. **Test in Preview First**
-
    - All changes go through develop → preview
    - Verify in preview before production
 
 2. **Use GitHub Environments**
-
    - Add approval requirements for production
    - Separate secrets per environment
 
 3. **Monitor After Deployment**
-
    - Check Supabase logs
    - Verify cron job execution
    - Test edge function endpoints

@@ -196,7 +196,6 @@ Check the workflow logs for:
 1. Go to https://supabase.com/dashboard/project/udkojnvmgqicrvzbaqts
 
 2. **Enable Google Auth**:
-
    - Authentication → Providers → Google
    - Toggle ON
    - Add Client ID and Secret (same as GitHub Secrets)
@@ -207,6 +206,7 @@ Check the workflow logs for:
    ```sql
    SELECT * FROM cron.job WHERE jobname LIKE 'v2-%';
    ```
+
    - Should see 6 active jobs
 
 ### Production Environment
@@ -237,7 +237,6 @@ git push origin main
 1. Go to https://vercel.com
 2. Import GitHub repository
 3. Configure:
-
    - **Framework**: SvelteKit
    - **Root Directory**: ./
    - **Build Command**: `npm run build`
@@ -334,13 +333,11 @@ SELECT toggle_cron_jobs(true);
 ## 📚 Next Steps
 
 1. **Customize for your domain**:
-
    - Update auth redirect URLs
    - Configure custom domain in Vercel
    - Update email templates
 
 2. **Monitor everything**:
-
    - Supabase Dashboard → Logs
    - Vercel Dashboard → Functions
    - GitHub Actions → Workflow runs

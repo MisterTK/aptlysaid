@@ -110,18 +110,15 @@ ENCRYPTION_KEY              # Generate with: openssl rand -hex 16
 ### One-Time Setup
 
 1. **Enable GitHub Integration in Supabase**
-
    - Dashboard → Settings → Integrations → GitHub
    - Enable branching
 
 2. **Configure Vercel**
-
    - Import repository
    - Install Supabase integration
    - Auto-deploys configured
 
 3. **Set up Auth Providers**
-
    - Enable Google OAuth in Supabase Dashboard
    - Configure redirect URLs
 

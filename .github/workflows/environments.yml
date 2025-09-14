@@ -1,0 +1,154 @@
+name: Environment Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      action:
+        description: "Action to perform"
+        required: true
+        type: choice
+        options:
+          - deploy
+          - rollback
+          - sync-secrets
+          - health-check
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+
+jobs:
+  environment-action:
+    name: ${{ github.event.inputs.action }} - ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup tools
+        run: |
+          npm install --global vercel@latest
+          curl -sSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz | tar -xz
+          sudo mv supabase /usr/local/bin/
+
+      - name: Deploy to environment
+        if: github.event.inputs.action == 'deploy'
+        run: |
+          case "${{ github.event.inputs.environment }}" in
+            development)
+              echo "Deploying to development..."
+              vercel deploy --token=${{ secrets.VERCEL_TOKEN }}
+              ;;
+            staging)
+              echo "Deploying to staging..."
+              vercel deploy --token=${{ secrets.VERCEL_TOKEN }}
+              vercel alias set $(vercel deploy --token=${{ secrets.VERCEL_TOKEN }}) staging-aptlysaid.vercel.app --token=${{ secrets.VERCEL_TOKEN }}
+              supabase db push --project-ref ${{ env.SUPABASE_PROJECT_ID }} --branch staging
+              ;;
+            production)
+              echo "Deploying to production..."
+              vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
+              supabase db push --project-ref ${{ env.SUPABASE_PROJECT_ID }}
+              ;;
+          esac
+
+      - name: Rollback deployment
+        if: github.event.inputs.action == 'rollback'
+        run: |
+          case "${{ github.event.inputs.environment }}" in
+            staging|production)
+              # Get previous deployment
+              prev_deployment=$(vercel list --token=${{ secrets.VERCEL_TOKEN }} | head -2 | tail -1 | awk '{print $1}')
+              vercel rollback $prev_deployment --token=${{ secrets.VERCEL_TOKEN }}
+
+              # For Supabase, we'll need to revert migrations manually
+              echo "⚠️  Supabase migrations need manual rollback via SQL"
+              ;;
+            development)
+              echo "Development environment doesn't support rollback"
+              exit 1
+              ;;
+          esac
+
+      - name: Sync secrets
+        if: github.event.inputs.action == 'sync-secrets'
+        run: |
+          # Export secrets from GitHub to Vercel
+          echo "Syncing secrets to Vercel ${{ github.event.inputs.environment }}..."
+
+          # Map environment names
+          vercel_env="${{ github.event.inputs.environment }}"
+          if [ "$vercel_env" = "staging" ]; then
+            vercel_env="preview"
+          fi
+
+          # Sync common secrets
+          vercel env add SUPABASE_URL=${{ secrets.SUPABASE_URL }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+          vercel env add SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+          vercel env add SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+
+          # Environment-specific secrets
+          case "${{ github.event.inputs.environment }}" in
+            production)
+              vercel env add STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_PROD }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+              vercel env add RESEND_API_KEY=${{ secrets.RESEND_API_KEY_PROD }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+              ;;
+            staging)
+              vercel env add STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY_TEST }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+              vercel env add RESEND_API_KEY=${{ secrets.RESEND_API_KEY_TEST }} $vercel_env --token=${{ secrets.VERCEL_TOKEN }} --yes || true
+              ;;
+          esac
+
+      - name: Health check
+        if: github.event.inputs.action == 'health-check'
+        run: |
+          case "${{ github.event.inputs.environment }}" in
+            production)
+              url="https://aptlysaid.com"
+              ;;
+            staging)
+              url="https://staging-aptlysaid.vercel.app"
+              ;;
+            development)
+              url=$(vercel list --token=${{ secrets.VERCEL_TOKEN }} | head -2 | tail -1 | awk '{print $4}')
+              ;;
+          esac
+
+          echo "Checking health of $url..."
+
+          # Check main site
+          response=$(curl -s -o /dev/null -w "%{http_code}" $url)
+          if [ $response -eq 200 ]; then
+            echo "✅ Main site is healthy"
+          else
+            echo "❌ Main site returned $response"
+            exit 1
+          fi
+
+          # Check API health
+          api_response=$(curl -s -o /dev/null -w "%{http_code}" $url/api/health)
+          if [ $api_response -eq 200 ]; then
+            echo "✅ API is healthy"
+          else
+            echo "❌ API returned $api_response"
+            exit 1
+          fi
+
+          # Check Supabase connection
+          supabase_health=$(curl -s $url/api/health | jq -r '.supabase')
+          if [ "$supabase_health" = "connected" ]; then
+            echo "✅ Supabase is connected"
+          else
+            echo "❌ Supabase connection failed"
+            exit 1
+          fi
