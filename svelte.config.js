@@ -5,7 +5,7 @@ import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
 const config = {
   kit: {
     adapter: adapter({
-      runtime: "nodejs22.x",
+      runtime: "nodejs20.x",
     }),
     inlineStyleThreshold: 1024,
     csp: {
