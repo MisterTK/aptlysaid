@@ -79,6 +79,9 @@
     "resend": "^6.0.3",
     "stripe": "^18.5.0"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^5.2.0"
+  },
   "overrides": {
     "@supabase/auth-ui-svelte": {
       "svelte": "$svelte"
