@@ -18,7 +18,7 @@
   let adminSection: Writable<string> = getContext("adminSection")
   adminSection.set("reviews")
 
-  let selectedReviewIds = new SvelteSet<string>()
+  let selectedReviewIds = $state(new SvelteSet<string>())
 
   // Filters and Sorting
   let selectedLocation = $state("all")
