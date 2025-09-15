@@ -88,10 +88,6 @@
     },
     "@sveltejs/kit": {
       "cookie": "^0.7.0"
-    },
-    "rollup": "^4.28.1"
-  },
-  "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.28.1"
+    }
   }
 }
